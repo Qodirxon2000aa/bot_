@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router";
 
 const TelegramContext = createContext(null);
 
-// Ruxsat etilgan startapp route'lar — xavfsizlik uchun whitelist
-const ALLOWED_START_PARAMS = {
+// Ruxsat etilgan startapp route'lar
+export const ALLOWED_START_PARAMS = {
   payment:     "/payment",
   buy:         "/buy",
   premium:     "/premium",
@@ -21,27 +20,8 @@ export const TelegramProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [startParam, setStartParam] = useState(null); // 👈 Router uchun expose qilamiz
   const fetchedRef = useRef(false);
-
-  // navigate faqat component ichida ishlatiladi,
-  // shuning uchun provider ichida ham useNavigate ishlatamiz
-  const navigate = useNavigate();
-
-  /* ========================= 🔗 START PARAM REDIRECT ========================= */
-  const handleStartParam = (startParam) => {
-    if (!startParam) return;
-
-    console.log("🔗 start_param:", startParam);
-
-    const route = ALLOWED_START_PARAMS[startParam.toLowerCase()];
-    if (route) {
-      console.log("🔗 Redirecting to:", route);
-      // Biroz kechiktiramiz — app to'liq mount bo'lsin
-      setTimeout(() => navigate(route, { replace: true }), 100);
-    } else {
-      console.warn("⚠️ Unknown start_param:", startParam);
-    }
-  };
 
   /* ========================= 👤 USER FETCH ========================= */
   const fetchUserFromApi = async (telegramId) => {
@@ -87,13 +67,8 @@ export const TelegramProvider = ({ children }) => {
   /* ========================= 📦 ORDERS ========================= */
   const fetchOrders = async (telegramId) => {
     try {
-      const url = `https://m4746.myxvest.ru/webapp/history.php?user_id=${telegramId}`;
-      console.log("📦 Fetching orders from:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(`https://m4746.myxvest.ru/webapp/history.php?user_id=${telegramId}`);
       const data = await res.json();
-      console.log("📦 Orders response:", data);
-
       setOrders(data.ok && Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
       console.error("❌ fetchOrders error:", err);
@@ -104,13 +79,8 @@ export const TelegramProvider = ({ children }) => {
   /* ========================= 💳 PAYMENTS ========================= */
   const fetchPayments = async (telegramId) => {
     try {
-      const url = `https://m4746.myxvest.ru/webapp/payments.php?user_id=${telegramId}`;
-      console.log("💳 Fetching payments from:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(`https://m4746.myxvest.ru/webapp/payments.php?user_id=${telegramId}`);
       const data = await res.json();
-      console.log("💳 Payments response:", data);
-
       setPayments(data.ok && Array.isArray(data.payments) ? data.payments : []);
     } catch (err) {
       console.error("❌ fetchPayments error:", err);
@@ -128,9 +98,7 @@ export const TelegramProvider = ({ children }) => {
         `?user_id=${user.id}&amount=${amount}&sent=@${sent.replace("@ ", "")}` +
         `&type=${type}&overall=${overall}`;
 
-      console.log("⭐ Creating order:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (data.ok) {
@@ -155,9 +123,7 @@ export const TelegramProvider = ({ children }) => {
         `?user_id=${user.id}&amount=${months}&sent=${sent.replace("@", "")}` +
         `&overall=${overall}`;
 
-      console.log("💎 Creating premium order:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (data.ok) {
@@ -178,9 +144,7 @@ export const TelegramProvider = ({ children }) => {
       if (!user?.id) throw new Error("User topilmadi");
 
       const balance = Number(apiUser?.balance || 0);
-      if (balance < price) {
-        return { ok: false, message: "Balans yetarli emas" };
-      }
+      if (balance < price) return { ok: false, message: "Balans yetarli emas" };
 
       const cleanUsername = sent.startsWith("@") ? sent : `@${sent}`;
       const url =
@@ -189,14 +153,10 @@ export const TelegramProvider = ({ children }) => {
         `&gift_id=${giftId}` +
         `&sent=${encodeURIComponent(cleanUsername)}`;
 
-      console.log("🎁 Creating gift order:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const data = await res.json();
 
-      if (!data?.ok) {
-        return { ok: false, message: data?.message || "Gift xatosi" };
-      }
+      if (!data?.ok) return { ok: false, message: data?.message || "Gift xatosi" };
 
       await fetchUserFromApi(user.id);
       await fetchOrders(user.id);
@@ -210,7 +170,6 @@ export const TelegramProvider = ({ children }) => {
   /* ========================= 🔄 REFRESH ========================= */
   const refreshUser = async () => {
     if (user?.id) {
-      console.log("🔄 Refreshing data for user:", user.id);
       await fetchUserFromApi(user.id);
       await fetchOrders(user.id);
       await fetchPayments(user.id);
@@ -223,12 +182,8 @@ export const TelegramProvider = ({ children }) => {
       if (!username) return { ok: false, message: "Username kiritilmagan" };
 
       const cleanUsername = username.replace("@", "");
-      const url = `https://tezpremium.uz/starsapi/user.php?username=${cleanUsername}`;
-      console.log("👤 Checking username:", url);
-
-      const res = await fetch(url);
+      const res  = await fetch(`https://tezpremium.uz/starsapi/user.php?username=${cleanUsername}`);
       const data = await res.json();
-      console.log("👤 Username check response:", data);
 
       if (data.username) {
         return {
@@ -241,7 +196,6 @@ export const TelegramProvider = ({ children }) => {
           },
         };
       }
-
       return { ok: false, message: "Foydalanuvchi topilmadi" };
     } catch (err) {
       console.error("❌ checkUsername error:", err);
@@ -254,20 +208,17 @@ export const TelegramProvider = ({ children }) => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return null;
 
-    if (tg.initDataUnsafe?.user?.id) {
-      return tg.initDataUnsafe.user;
-    }
+    if (tg.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user;
 
     if (tg.initData) {
       try {
-        const params = new URLSearchParams(tg.initData);
+        const params  = new URLSearchParams(tg.initData);
         const userRaw = params.get("user");
         if (userRaw) return JSON.parse(userRaw);
       } catch (e) {
         console.error("❌ Telegram initData parse error:", e);
       }
     }
-
     return null;
   };
 
@@ -277,7 +228,7 @@ export const TelegramProvider = ({ children }) => {
     fetchedRef.current = true;
 
     const telegram = window.Telegram?.WebApp;
-    const tgUser = getTelegramUser();
+    const tgUser   = getTelegramUser();
 
     const isTelegramEnv =
       telegram &&
@@ -289,45 +240,40 @@ export const TelegramProvider = ({ children }) => {
       telegram.expand();
     }
 
-    // start_param ni o'qib redirect qilamiz (ham real, ham dev uchun)
-    const startParam =
-      telegram?.initDataUnsafe?.start_param ||   // Telegram WebApp
-      new URLSearchParams(window.location.search).get("startapp") || // Dev brauzer fallback
+    // start_param o'qish — Telegram dan yoki dev brauzerdan
+    const param =
+      telegram?.initDataUnsafe?.start_param ||
+      new URLSearchParams(window.location.search).get("startapp") ||
       null;
 
-    // ============================================
-    // ✅ TELEGRAM MUHITI BOR
-    // ============================================
-    if (isTelegramEnv && tgUser?.id) {
-      console.log("✅ REAL TELEGRAM USER");
-      console.log("📱 ID:", tgUser.id);
+    if (param) {
+      console.log("🔗 start_param detected:", param);
+      setStartParam(param); // RootLayout uni o'qib navigate qiladi
+    }
 
-      const realUserData = {
+    // ✅ REAL TELEGRAM
+    if (isTelegramEnv && tgUser?.id) {
+      console.log("✅ REAL TELEGRAM USER, ID:", tgUser.id);
+
+      setUser({
         id: String(tgUser.id),
         first_name: tgUser.first_name || "",
         last_name: tgUser.last_name || "",
         username: tgUser.username ? `@${tgUser.username}` : "",
         photo_url: tgUser.photo_url || null,
         isTelegram: true,
-      };
-
-      setUser(realUserData);
+      });
 
       (async () => {
         await fetchUserFromApi(tgUser.id);
         await fetchOrders(tgUser.id);
         await fetchPayments(tgUser.id);
-        // Ma'lumotlar yuklangandan keyin redirect
-        handleStartParam(startParam);
       })();
     }
 
-    // ============================================
-    // ⚠️ FAQAT HAQIQIY BRAUZERDA DEV MODE
-    // ============================================
+    // ⚠️ DEV MODE
     else {
-      console.warn("⚠️ DEV MODE (REAL TELEGRAM EMAS)");
-
+      console.warn("⚠️ DEV MODE");
       const fakeId = "7521806735";
 
       setUser({
@@ -343,8 +289,6 @@ export const TelegramProvider = ({ children }) => {
         await fetchUserFromApi(fakeId);
         await fetchOrders(fakeId);
         await fetchPayments(fakeId);
-        // Dev modeda ham test qilish mumkin: ?startapp=payment
-        handleStartParam(startParam);
       })();
     }
   }, []);
@@ -357,6 +301,7 @@ export const TelegramProvider = ({ children }) => {
         orders,
         payments,
         loading,
+        startParam,      // 👈 RootLayout bu orqali navigate qiladi
         createOrder,
         createPremiumOrder,
         createGiftOrder,
