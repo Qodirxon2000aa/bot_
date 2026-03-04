@@ -1,5 +1,82 @@
 /* Payment.css */
 
+
+
+/* DARK MODE */
+.dark .payment-wrapper {
+  background-color: #0f0f0f;
+  color: #ffffff;
+}
+
+.dark .payment-card {
+  background: #1a1a1a;
+}
+
+.dark .payment-label {
+  color: #a1a1aa;
+}
+
+.dark .payment-receiver {
+  color: #60a5fa;
+}
+
+.dark .payment-price {
+  color: #34d399;
+}
+
+.dark .payment-method {
+  border: 1.5px solid #2a2a2a;
+  background: #1a1a1a;
+}
+
+.dark .payment-method.selected {
+  border-color: #3b82f6;
+  background: #1e3a5f;
+}
+
+/* Skeleton */
+.dark .payment-skeleton {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 25%,
+    #3a3a3a 50%,
+    #2a2a2a 75%
+  );
+}
+
+.dark .payment-input-label {
+  color: #a1a1aa;
+}
+
+.dark .payment-input {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #ffffff;
+}
+
+.dark .payment-input:focus {
+  border-color: #3b82f6;
+}
+
+.dark .payment-error {
+  color: #f87171;
+}
+
+.dark .payment-info-text {
+  color: #a1a1aa;
+}
+
+.dark .payment-button {
+  background: #2563eb;
+}
+
+.dark .payment-button:hover {
+  background: #1d4ed8;
+}
+
+.dark .payment-button:active {
+  background: #1e40af;
+}
 .payment-wrapper {
   max-width: 420px;
   min-height: 100vh;

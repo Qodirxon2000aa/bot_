@@ -89,6 +89,7 @@ function SuccessOverlay({ amount, onDone }) {
           width: 90px; height: 90px; border-radius: 50%;
           background: rgba(34,197,94,0.25);
         }
+      
         .success-ripple.r1 {
           animation: ${phase >= 1 ? "ripple1 1.2s ease-out 0.2s infinite" : "none"};
         }
@@ -426,7 +427,7 @@ function ClickPayModal({ link, paymentId, amount, status, statusLoading, onCheck
         .rcpt-pay-btn {
           display:flex; align-items:center; justify-content:space-between;
           padding:15px 16px; border-radius:16px; text-decoration:none;
-          background:linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#3b82f6 100%);
+          background:linear-gradient(135deg,#ffff 0%,#2563eb 60%,#3b82f6 100%);
           border:none; position:relative; overflow:hidden;
           box-shadow:0 4px 22px rgba(37,99,235,.4);
           transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease;
