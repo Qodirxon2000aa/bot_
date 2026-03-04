@@ -120,7 +120,7 @@ export default function Payment() {
       <div style={{ marginBottom: 20 }}>
         <h3 className="payment-title">To'lov tizimini tanlang</h3>
         <div className="payment-methods">
-          {(["payme", "uzcard", "click", "tonkeeper"] as PaymentMethod[]).map((m) => (
+          {(["click", "tonkeeper"] as PaymentMethod[]).map((m) => (
             <div
               key={m}
               onClick={() => setMethod(m)}
