@@ -16,11 +16,11 @@ import {
 
 const API_URL = "https://tezpremium.uz/webapp/giftlar.php";
 
-const FILTERS = [
-  { key: "all", label: "Barcha" },
-  { key: "new", label: "Yangi" },
-  { key: "old", label: "Eski"  },
-];
+// const FILTERS = [
+//   { key: "all", label: "Barcha" },
+//   { key: "new", label: "Yangi" },
+//   { key: "old", label: "Eski"  },
+// ];
 
 export default function GiftsPage() {
   const navigate = useNavigate();
@@ -94,7 +94,7 @@ export default function GiftsPage() {
       <div className="p-3 space-y-4 pb-24">
 
         {/* ── Filter tabs ── */}
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -108,7 +108,7 @@ export default function GiftsPage() {
               {f.label}
             </button>
           ))}
-        </div>
+        </div> */}
 
         {/* ── Stats ── */}
         <div className="grid grid-cols-2 gap-3">
@@ -154,7 +154,7 @@ export default function GiftsPage() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-base">
                 {activeFilter === "all" ? "Barcha giftlar"
-                  : activeFilter === "new" ? "Yangi giftlar"
+                  : activeFilter === "new" ? "Barcha giftlar"
                   : "Eski giftlar"}
               </h3>
               <div className="flex items-center gap-2">
