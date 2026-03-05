@@ -8,6 +8,41 @@ const PaymentImages = {
 };
 
 /* ═══════════════════════════════════════════════
+   TELEGRAM WEBAPP LINK OPENER
+   — ton:// deep link  → openLink (try_instant_view:false)
+   — https://          → openLink
+   — fallback          → window.location.href
+═══════════════════════════════════════════════ */
+function openExternalLink(url, provider) {
+  if (!url) return;
+  const tg = window?.Telegram?.WebApp;
+
+  try {
+    if (provider === "tonkeeper") {
+      // ton:// yoki https://app.tonkeeper.com → ilovani ochadi
+      if (tg?.openLink) {
+        tg.openLink(url, { try_instant_view: false });
+      } else {
+        window.location.href = url;
+      }
+      return;
+    }
+
+    // Click yoki boshqa https link
+    if (tg?.openLink) {
+      tg.openLink(url, { try_instant_view: false });
+    } else if (tg?.openTelegramLink && url.includes("t.me")) {
+      tg.openTelegramLink(url);
+    } else {
+      window.location.href = url;
+    }
+  } catch (e) {
+    // Fallback
+    window.location.href = url;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    SHARED CSS — bir marta inject qilinadi
 ═══════════════════════════════════════════════ */
 const SHARED_STYLES = `
@@ -278,6 +313,72 @@ const SHARED_STYLES = `
   .sp2 .success-sub           { animation:textSlideUp .45s ease .08s forwards; opacity:1; }
   .sp2 .success-amount-card   { animation:amountPop .5s cubic-bezier(.34,1.56,.64,1) .15s both; }
   .sp2 .success-redirect-hint { animation:textSlideUp .4s ease .3s both; }
+
+  /* ── RESPONSIVE: kichik telefonlar (≤380px) ── */
+  @media (max-width: 380px) {
+    .rcpt-sheet          { padding:0 0 32px; border-radius:20px 20px 0 0; }
+    .rcpt-header         { padding:16px 16px 14px; gap:10px; }
+    .rcpt-logo           { width:42px; height:42px; border-radius:11px; }
+    .rcpt-logo img       { width:26px; height:26px; }
+    .rcpt-header h2      { font-size:14px; }
+    .rcpt-header p       { font-size:10px; }
+    .rcpt-amount         { padding:16px 16px 14px; }
+    .rcpt-amount-val     { font-size:28px; letter-spacing:-1px; }
+    .rcpt-amount-val span{ font-size:14px; }
+    .rcpt-amount-label   { font-size:9px; letter-spacing:1.4px; }
+    .rcpt-rows           { padding:14px 16px; gap:10px; }
+    .rcpt-row-k          { font-size:11px; }
+    .rcpt-row-v          { font-size:11px; }
+    .rcpt-badge          { font-size:10px; padding:3px 9px; }
+    .rcpt-scissors       { padding:10px 16px; }
+    .rcpt-actions        { padding:14px 16px 0; gap:8px; }
+    .rcpt-pay-btn        { padding:12px 14px; border-radius:13px; }
+    .rcpt-btn-icon       { width:32px; height:32px; border-radius:9px; }
+    .rcpt-btn-icon img   { width:20px; height:20px; }
+    .rcpt-btn-title      { font-size:13px; }
+    .rcpt-btn-sub        { font-size:9px; }
+    .rcpt-btn-arrow      { width:26px; height:26px; font-size:13px; }
+    .rcpt-btn-left       { gap:9px; }
+    .rcpt-refresh-row    { padding:9px 12px; }
+    .rcpt-refresh-label  { font-size:10px; }
+    .rcpt-refresh-btn    { font-size:10px; padding:4px 9px; }
+    .rcpt-footer         { font-size:9px; padding:11px 16px 0; }
+    .rcpt-handle         { margin:12px auto 0; }
+
+    .success-title       { font-size:21px; }
+    .success-sub         { font-size:12px; margin-bottom:20px; }
+    .success-amount-card { padding:13px 28px; border-radius:14px; }
+    .success-amount-val  { font-size:24px; }
+    .success-amount-val span { font-size:13px; }
+    .success-circle      { width:76px; height:76px; }
+    .success-ripple      { width:76px; height:76px; }
+    .success-circle-wrap { margin-bottom:24px; }
+  }
+
+  /* ── RESPONSIVE: orta telefonlar (381px–430px) ── */
+  @media (min-width:381px) and (max-width:430px) {
+    .rcpt-sheet          { padding:0 0 36px; }
+    .rcpt-header         { padding:18px 18px 15px; }
+    .rcpt-amount         { padding:18px 18px 15px; }
+    .rcpt-amount-val     { font-size:32px; }
+    .rcpt-rows           { padding:15px 18px; gap:11px; }
+    .rcpt-actions        { padding:15px 18px 0; }
+    .rcpt-scissors       { padding:11px 18px; }
+    .rcpt-footer         { padding:12px 18px 0; }
+  }
+
+  /* ── RESPONSIVE: scroll — modal ichidagi content uzun bo'lsa ── */
+  @media (max-height: 700px) {
+    .rcpt-sheet {
+      max-height: 92vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .rcpt-amount  { padding:14px 20px 12px; }
+    .rcpt-rows    { gap:9px; padding:13px 20px; }
+    .rcpt-scissors{ padding:9px 20px; }
+    .rcpt-actions { padding:12px 20px 0; }
+  }
 `;
 
 /* ═══════════════════════════════════════════════
@@ -466,12 +567,10 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
 
           {/* Actions */}
           <div className="rcpt-actions">
-            <a
+            <button
               className="rcpt-pay-btn"
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ background: cfg.btnBg, boxShadow: cfg.btnShadow }}
+              onClick={() => openExternalLink(link, provider)}
+              style={{ background: cfg.btnBg, boxShadow: cfg.btnShadow, width: "100%", border: "none" }}
             >
               <div className="rcpt-btn-left">
                 <div className="rcpt-btn-icon">
@@ -483,7 +582,7 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
                 </div>
               </div>
               <div className="rcpt-btn-arrow">→</div>
-            </a>
+            </button>
 
             <div className="rcpt-refresh-row">
               <span className="rcpt-refresh-label">To'lov holatini yangilash</span>
