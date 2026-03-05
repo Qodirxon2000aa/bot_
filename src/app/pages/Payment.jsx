@@ -722,7 +722,7 @@ export default function Payment() {
   const checkClickStatus = async (paymentId) => {
     try {
       setStatusLoading(true);
-      const res = await fetch(`https://tezpremium.uz/ClickPass/status.php?payment_id=${paymentId}`);
+      const res = await fetch(`https://tezpremium.uz/MilliyDokon/click_status.php?payment_id=${paymentId}`);
       const data = await res.json();
       const newStatus = data.status || "pending";
       setModalStatus(newStatus);
