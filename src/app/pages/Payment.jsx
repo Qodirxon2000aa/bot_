@@ -488,7 +488,7 @@ const PROVIDER_CFG = {
     title: "Tonkeeper To'lovi",
     subtitle: "ton.org · Blockchain to'lov",
     btnLabel: "Tonkeeper orqali to'lash",
-    btnSub: "Tez · Xavfsiz · Decentralized",
+    btnSub: "Tez · Xavfsiz · Himoyalangan",
     footer: "TON blockchain tomonidan himoyalangan",
     topBar: "linear-gradient(90deg,#0098ea,#54c0ff,#0098ea)",
     btnBg: "linear-gradient(135deg,#005f99 0%,#0098ea 60%,#54c0ff 100%)",
