@@ -7,19 +7,12 @@ const PaymentImages = {
   tonkeeper: "https://i.ibb.co/jkLrSV3X/image-Photoroom-1.png",
 };
 
-/* ═══════════════════════════════════════════════
-   TELEGRAM WEBAPP LINK OPENER
-   — ton:// deep link  → openLink (try_instant_view:false)
-   — https://          → openLink
-   — fallback          → window.location.href
-═══════════════════════════════════════════════ */
 function openExternalLink(url, provider) {
   if (!url) return;
   const tg = window?.Telegram?.WebApp;
 
   try {
     if (provider === "tonkeeper") {
-      // ton:// yoki https://app.tonkeeper.com → ilovani ochadi
       if (tg?.openLink) {
         tg.openLink(url, { try_instant_view: false });
       } else {
@@ -28,7 +21,6 @@ function openExternalLink(url, provider) {
       return;
     }
 
-    // Click yoki boshqa https link
     if (tg?.openLink) {
       tg.openLink(url, { try_instant_view: false });
     } else if (tg?.openTelegramLink && url.includes("t.me")) {
@@ -37,14 +29,10 @@ function openExternalLink(url, provider) {
       window.location.href = url;
     }
   } catch (e) {
-    // Fallback
     window.location.href = url;
   }
 }
 
-/* ═══════════════════════════════════════════════
-   SHARED CSS — bir marta inject qilinadi
-═══════════════════════════════════════════════ */
 const SHARED_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@400;500;600;700;800&display=swap');
 
@@ -96,6 +84,18 @@ const SHARED_STYLES = `
   @keyframes confettiFall {
     0%   { transform:translateY(-20px) rotate(0deg); opacity:1; }
     100% { transform:translateY(120px) rotate(360deg); opacity:0; }
+  }
+  @keyframes tonRateSlide {
+    from { opacity:0; transform:translateY(-6px) scale(0.97); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes tonRatePulse {
+    0%,100% { opacity:1; }
+    50%     { opacity:0.5; }
+  }
+  @keyframes tonRateSpin {
+    from { transform:rotate(0deg); }
+    to   { transform:rotate(360deg); }
   }
 
   .rcpt-overlay {
@@ -267,6 +267,94 @@ const SHARED_STYLES = `
     padding:14px 22px 0; font-family:'JetBrains Mono',monospace; letter-spacing:.4px;
   }
 
+  /* TON RATE CARD */
+  .ton-rate-card {
+    margin-top: 12px;
+    background: linear-gradient(135deg, rgba(0,152,234,0.08) 0%, rgba(0,152,234,0.04) 100%);
+    border: 1px solid rgba(0,152,234,0.25);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    animation: tonRateSlide 0.35s cubic-bezier(.22,1,.36,1) forwards;
+    position: relative;
+    overflow: hidden;
+  }
+  .ton-rate-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,152,234,0.06), transparent);
+    animation: rcpt-shimmer 3s ease infinite;
+  }
+  .ton-rate-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ton-icon-wrap {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(0,152,234,0.15);
+    border: 1px solid rgba(0,152,234,0.25);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ton-rate-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .ton-rate-sub {
+    font-size: 9px;
+    color: rgba(0,152,234,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;
+  }
+  .ton-rate-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ton-amount-big {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0098ea;
+    letter-spacing: -0.8px;
+    line-height: 1;
+    font-family: 'Sora', sans-serif;
+  }
+  .ton-amount-big span {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0,152,234,0.6);
+    margin-left: 3px;
+  }
+  .ton-rate-detail {
+    font-size: 9px;
+    color: rgba(255,255,255,0.2);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+    text-align: right;
+  }
+  .ton-rate-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(0,152,234,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    animation: tonRatePulse 1.2s ease infinite;
+  }
+  .ton-rate-spin {
+    width: 12px; height: 12px;
+    border: 1.5px solid rgba(0,152,234,0.3);
+    border-top-color: #0098ea;
+    border-radius: 50%;
+    animation: tonRateSpin 0.7s linear infinite;
+  }
+
   /* SUCCESS */
   .success-overlay {
     position:fixed; inset:0; z-index:2000;
@@ -314,7 +402,6 @@ const SHARED_STYLES = `
   .sp2 .success-amount-card   { animation:amountPop .5s cubic-bezier(.34,1.56,.64,1) .15s both; }
   .sp2 .success-redirect-hint { animation:textSlideUp .4s ease .3s both; }
 
-  /* ── RESPONSIVE: kichik telefonlar (≤380px) ── */
   @media (max-width: 380px) {
     .rcpt-sheet          { padding:0 0 32px; border-radius:20px 20px 0 0; }
     .rcpt-header         { padding:16px 16px 14px; gap:10px; }
@@ -344,7 +431,8 @@ const SHARED_STYLES = `
     .rcpt-refresh-btn    { font-size:10px; padding:4px 9px; }
     .rcpt-footer         { font-size:9px; padding:11px 16px 0; }
     .rcpt-handle         { margin:12px auto 0; }
-
+    .ton-rate-card       { padding:10px 12px; border-radius:11px; }
+    .ton-amount-big      { font-size:17px; }
     .success-title       { font-size:21px; }
     .success-sub         { font-size:12px; margin-bottom:20px; }
     .success-amount-card { padding:13px 28px; border-radius:14px; }
@@ -355,7 +443,6 @@ const SHARED_STYLES = `
     .success-circle-wrap { margin-bottom:24px; }
   }
 
-  /* ── RESPONSIVE: orta telefonlar (381px–430px) ── */
   @media (min-width:381px) and (max-width:430px) {
     .rcpt-sheet          { padding:0 0 36px; }
     .rcpt-header         { padding:18px 18px 15px; }
@@ -367,7 +454,6 @@ const SHARED_STYLES = `
     .rcpt-footer         { padding:12px 18px 0; }
   }
 
-  /* ── RESPONSIVE: scroll — modal ichidagi content uzun bo'lsa ── */
   @media (max-height: 700px) {
     .rcpt-sheet {
       max-height: 92vh;
@@ -381,9 +467,6 @@ const SHARED_STYLES = `
   }
 `;
 
-/* ═══════════════════════════════════════════════
-   PROVIDER CONFIG
-═══════════════════════════════════════════════ */
 const PROVIDER_CFG = {
   click: {
     logo: PaymentImages.click,
@@ -417,9 +500,6 @@ const PROVIDER_CFG = {
   },
 };
 
-/* ═══════════════════════════════════════════════
-   RECEIPT MODAL — universal (click + tonkeeper)
-═══════════════════════════════════════════════ */
 function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, statusLoading, onCheckStatus, onClose, onPaid }) {
   const [visible, setVisible] = useState(false);
   const pollRef = useRef(null);
@@ -429,14 +509,12 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
     return () => clearTimeout(t);
   }, []);
 
-  /* Auto-poll every 4s */
   useEffect(() => {
     if (!paymentId || status === "paid" || status === "failed") return;
     pollRef.current = setInterval(() => onCheckStatus(paymentId), 4000);
     return () => clearInterval(pollRef.current);
   }, [paymentId, status]);
 
-  /* paid => trigger onPaid */
   useEffect(() => {
     if (status === "paid") {
       clearInterval(pollRef.current);
@@ -476,12 +554,10 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
           onClick={(e) => e.stopPropagation()}
           style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(40px)" }}
         >
-          {/* Colored top bar */}
           <div className="rcpt-top-bar" style={{ background: cfg.topBar }} />
           <div className="rcpt-handle" />
           <button className="rcpt-close" onClick={handleClose}>✕</button>
 
-          {/* Header */}
           <div className="rcpt-header">
             <div className="rcpt-logo" style={{ background: cfg.logoBg, boxShadow: cfg.logoShadow }}>
               <img src={cfg.logo} alt={provider} onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -492,7 +568,6 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
             </div>
           </div>
 
-          {/* Amount */}
           <div className="rcpt-amount">
             <div className="rcpt-amount-label">To'lov miqdori</div>
             <div className="rcpt-amount-val">
@@ -518,7 +593,6 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
             )}
           </div>
 
-          {/* Detail rows */}
           <div className="rcpt-rows">
             <div className="rcpt-row">
               <span className="rcpt-row-k">Qabul qiluvchi</span>
@@ -558,14 +632,12 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
             </div>
           </div>
 
-          {/* Scissors divider */}
           <div className="rcpt-scissors">
             <div className="rcpt-dash" />
             <span className="rcpt-scissors-icon">✂</span>
             <div className="rcpt-dash" />
           </div>
 
-          {/* Actions */}
           <div className="rcpt-actions">
             <button
               className="rcpt-pay-btn"
@@ -610,17 +682,14 @@ function ReceiptModal({ provider, link, paymentId, amount, tonAmount, status, st
   );
 }
 
-/* ═══════════════════════════════════════════════
-   SUCCESS OVERLAY
-═══════════════════════════════════════════════ */
 function SuccessOverlay({ amount, onDone }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 80);
     const t2 = setTimeout(() => setPhase(2), 700);
-    const t3 = setTimeout(() => setPhase(3), 4500);  // fade-out 4.5s da
-    const t4 = setTimeout(() => onDone(), 5000);      // 5s da tugaydi
+    const t3 = setTimeout(() => setPhase(3), 4500);
+    const t4 = setTimeout(() => onDone(), 5000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
@@ -633,7 +702,6 @@ function SuccessOverlay({ amount, onDone }) {
         className={`success-overlay ${phaseClass}`}
         style={{ animation: phase === 3 ? "successFadeOut .5s ease forwards" : "successFadeIn .35s ease forwards" }}
       >
-        {/* Confetti */}
         {phase >= 1 && (
           <div className="confetti-container">
             {Array.from({ length: 28 }).map((_, i) => {
@@ -654,7 +722,6 @@ function SuccessOverlay({ amount, onDone }) {
           </div>
         )}
 
-        {/* Circle + check */}
         <div className="success-circle-wrap">
           <div className="success-ripple r1" />
           <div className="success-ripple r2" />
@@ -688,6 +755,69 @@ function SuccessOverlay({ amount, onDone }) {
 }
 
 /* ═══════════════════════════════════════════════
+   TON RATE DISPLAY CARD
+═══════════════════════════════════════════════ */
+function TonRateCard({ amount, tonRate, loading }) {
+  const amountNum = parseFloat(amount);
+  const isValidAmount = amount && !isNaN(amountNum) && amountNum >= 1000;
+
+  // Hisoblash: summa / ton_uzs kursi
+  const tonAmount = isValidAmount && tonRate
+    ? (amountNum / tonRate.ton_uzs).toFixed(4)
+    : null;
+
+  return (
+    <>
+      <style>{SHARED_STYLES}</style>
+      <div className="ton-rate-card">
+        <div className="ton-rate-left">
+          <div className="ton-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
+              <path d="M14 2L3 8.5v11L14 26l11-6.5v-11L14 2z" fill="#0098ea" opacity=".35"/>
+              <path d="M14 2L3 8.5 14 15l11-6.5L14 2z" fill="#0098ea"/>
+            </svg>
+          </div>
+          <div>
+            <div className="ton-rate-label">TON kursi</div>
+            <div className="ton-rate-sub">
+              {loading
+                ? "yuklanmoqda..."
+                : tonRate
+                  ? `1 TON ≈ ${Number(tonRate.ton_uzs).toLocaleString("uz-UZ")} so'm`
+                  : "ma'lumot yo'q"
+              }
+            </div>
+          </div>
+        </div>
+
+        <div className="ton-rate-right">
+          {loading ? (
+            <div className="ton-rate-loading">
+              <div className="ton-rate-spin" />
+              <span>kurs olinmoqda</span>
+            </div>
+          ) : tonAmount ? (
+            <>
+              <div className="ton-amount-big">
+                ≈ {tonAmount}
+                <span>TON</span>
+              </div>
+              <div className="ton-rate-detail">
+                {tonRate && `$${tonRate.ton_usd} · ${Number(tonRate.usd_uzs).toLocaleString("uz-UZ")} so'm/$`}
+              </div>
+            </>
+          ) : (
+            <div className="ton-amount-big" style={{ color: "rgba(0,152,234,0.3)", fontSize: 13 }}>
+              summa kiriting
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════
    MAIN PAYMENT PAGE
 ═══════════════════════════════════════════════ */
 export default function Payment() {
@@ -698,7 +828,6 @@ export default function Payment() {
   const [loadedImages, setLoadedImages] = useState(new Set());
   const [submitLoading, setSubmitLoading] = useState(false);
 
-  /* universal modal state */
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProvider, setModalProvider] = useState(null);
   const [modalLink, setModalLink] = useState(null);
@@ -709,6 +838,43 @@ export default function Payment() {
 
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // ── TON KURS ──
+  const [tonRate, setTonRate] = useState(null);
+  const [tonRateLoading, setTonRateLoading] = useState(false);
+
+  // Tonkeeper tanlanganda yoki sahifa ochilganda kursni yuklash
+  useEffect(() => {
+    if (method === "tonkeeper") {
+      fetchTonRate();
+    }
+  }, [method]);
+
+  // Summa o'zgarishi debounce bilan kursni yangilash (keraksiz so'rovni oldini olish)
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    if (method !== "tonkeeper") return;
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (!tonRate) fetchTonRate();
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [amount, method]);
+
+  const fetchTonRate = async () => {
+    try {
+      setTonRateLoading(true);
+      const res = await fetch("https://tezpremium.uz/MilliyDokon/ton/kurs.php");
+      const data = await res.json();
+      if (data.status === "ok") {
+        setTonRate(data);
+      }
+    } catch (err) {
+      console.error("❌ fetchTonRate:", err);
+    } finally {
+      setTonRateLoading(false);
+    }
+  };
+
   const handleImageLoad = (m) => setLoadedImages((prev) => new Set(prev).add(m));
   const isImageLoaded = (m) => loadedImages.has(m);
 
@@ -718,7 +884,6 @@ export default function Payment() {
     if (value === "" || !isNaN(parseFloat(value))) setError("");
   };
 
-  /* ── CHECK STATUS (click) ── */
   const checkClickStatus = async (paymentId) => {
     try {
       setStatusLoading(true);
@@ -734,11 +899,10 @@ export default function Payment() {
     }
   };
 
-  /* ── CHECK STATUS (tonkeeper) ── */
   const checkTonStatus = async (paymentId) => {
     try {
       setStatusLoading(true);
-      const res = await fetch(`https://m4746.myxvest.ru/webapp/payments/ton_status.php?payment_id=${paymentId}`);
+      const res = await fetch(`https://tezpremium.uz/MilliyDokon/ton/ton_status.php?payment_id=${paymentId}`);
       const data = await res.json();
       const newStatus = data.status || "pending";
       setModalStatus(newStatus);
@@ -760,7 +924,6 @@ export default function Payment() {
     window.location.href = "/";
   };
 
-  /* ── SUBMIT ── */
   const handleSubmit = async () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum))    { setError("To'lov miqdorini kiriting"); return; }
@@ -792,7 +955,7 @@ export default function Payment() {
         }
 
       } else if (method === "tonkeeper") {
-        const res  = await fetch(`https://m4746.myxvest.ru/webapp/payments/tonpay.php?user_id=${user.id}&amount=${amountNum}`);
+        const res  = await fetch(`https://tezpremium.uz/MilliyDokon/ton/tonpay.php?user_id=${user.id}&amount=${amountNum}`);
         const data = await res.json();
 
         if (data.status === "ok" && data.link) {
@@ -887,6 +1050,15 @@ export default function Payment() {
             style={{ cursor: "text", pointerEvents: "auto", opacity: 1 }}
           />
           {error && <p className="payment-error">⚠️ {error}</p>}
+
+          {/* ── TON KURS CARD — faqat tonkeeper tanlanganda ko'rinadi ── */}
+          {method === "tonkeeper" && (
+            <TonRateCard
+              amount={amount}
+              tonRate={tonRate}
+              loading={tonRateLoading}
+            />
+          )}
         </div>
 
         {/* Submit */}
