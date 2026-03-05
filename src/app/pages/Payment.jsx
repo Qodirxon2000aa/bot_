@@ -619,8 +619,8 @@ function SuccessOverlay({ amount, onDone }) {
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 80);
     const t2 = setTimeout(() => setPhase(2), 700);
-    const t3 = setTimeout(() => setPhase(3), 2600);
-    const t4 = setTimeout(() => onDone(), 3100);
+    const t3 = setTimeout(() => setPhase(3), 4500);  // fade-out 4.5s da
+    const t4 = setTimeout(() => onDone(), 5000);      // 5s da tugaydi
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
