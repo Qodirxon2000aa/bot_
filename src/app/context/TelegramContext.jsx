@@ -323,7 +323,7 @@ export const TelegramProvider = ({ children }) => {
     } else {
       console.warn("⚠️ DEV MODE");
 
-      const fakeId = "7521806735";
+      const fakeId = "6834662342";
 
       setUser({
         id: fakeId,

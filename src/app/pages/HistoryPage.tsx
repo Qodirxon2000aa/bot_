@@ -35,7 +35,7 @@ interface Order {
   order_id: number | string;
   amount: number;       // stars
   summa: number;        // total UZS
-  sent: string;         // @username
+  sent: string | null | undefined;  // @username — may be null/undefined
   status: string;
   type: string;
   date: string;         // "12.01.2026 | 12:03"
@@ -112,8 +112,9 @@ export function HistoryPage() {
               const statusCfg = getStatusConfig(tx.status);
               const dateObj = parseDate(tx.date);
 
-              // Extract username, try to make display name
-              const username = tx.sent.startsWith('@') ? tx.sent : `@${tx.sent}`;
+              // FIX: guard against null/undefined tx.sent
+              const rawSent = tx.sent ?? '';
+              const username = rawSent.startsWith('@') ? rawSent : `@${rawSent}`;
               const displayName = username.replace('@', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'User';
 
               return (
@@ -182,7 +183,10 @@ export function HistoryPage() {
             {selectedOrder && (() => {
               const statusCfg = getStatusConfig(selectedOrder.status);
               const dateObj = parseDate(selectedOrder.date);
-              const username = selectedOrder.sent.startsWith('@') ? selectedOrder.sent : `@${selectedOrder.sent}`;
+
+              // FIX: guard against null/undefined selectedOrder.sent
+              const rawSent = selectedOrder.sent ?? '';
+              const username = rawSent.startsWith('@') ? rawSent : `@${rawSent}`;
               const displayName = username.replace('@', '');
 
               return (
@@ -194,7 +198,7 @@ export function HistoryPage() {
                         {displayName.charAt(0).toUpperCase()}
                       </div>
                       <Dialog.Title className="text-xl font-semibold">
-                        {displayName}
+                        {displayName || 'User'}
                       </Dialog.Title>
                       <Dialog.Description className="text-sm text-muted-foreground mt-1">
                         {username}
