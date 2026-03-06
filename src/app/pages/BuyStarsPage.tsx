@@ -38,7 +38,7 @@ export function BuyStarsPage() {
     const fetchRate = async () => {
       setIsLoadingRate(true);
       try {
-        const response = await fetch('https://m4746.myxvest.ru/webapp/settings.php');
+        const response = await fetch('https://tezpremium.uz/MilliyDokon/control/settings.php');
         const data = await response.json();
         
         if (data.ok && data.settings && data.settings.price) {
