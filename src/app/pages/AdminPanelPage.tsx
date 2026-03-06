@@ -55,7 +55,7 @@ export function AdminPanelPage() {
     const fetchRate = async () => {
       try {
         const res = await fetch(
-          'https://tezpremium.uz/MilliyDokon/control/setdata.php?'
+          'https://tezpremium.uz/MilliyDokon/control/settings.php'
         );
         const data = await res.json();
 
