@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useTelegram } from '@/app/context/TelegramContext'; // ← changed context
+import { useTelegram } from '@/app/context/TelegramContext';
 import { TopBar } from '@/app/components/ui/TopBar';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
 import { EmptyState } from '@/app/components/ui/EmptyState';
 import { ChipGroup, Chip } from '@/app/components/ui/Chip';
-import { History, Sparkles, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { History, Sparkles, Clock, CheckCircle2, XCircle, Loader2, Star, Crown, Gift } from 'lucide-react';
+import { format } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
 
 // Backend → Frontend status mapping
@@ -26,19 +26,38 @@ const statusMap: Record<string, { label: string; variant: string; icon: JSX.Elem
     variant: 'destructive',
     icon: <XCircle className="w-4 h-4 text-destructive" />,
   },
-  // add more statuses if your backend sends them
 };
 
-type FilterType = 'all' | 'completed' | 'pending' | 'failed';
+// Type icon & color config
+const typeConfig: Record<string, { icon: JSX.Element; color: string; bg: string }> = {
+  Stars: {
+    icon: <Star className="w-5 h-5" />,
+    color: '#f59e0b',
+    bg: 'linear-gradient(135deg, #92400e, #d97706)',
+  },
+  Premium: {
+    icon: <Crown className="w-5 h-5" />,
+    color: '#a855f7',
+    bg: 'linear-gradient(135deg, #581c87, #9333ea)',
+  },
+  Gift: {
+    icon: <Gift className="w-5 h-5" />,
+    color: '#ec4899',
+    bg: 'linear-gradient(135deg, #831843, #db2777)',
+  },
+};
+
+type FilterType = 'all' | 'Successful' | 'Pending' | 'Failed';
 
 interface Order {
   order_id: number | string;
-  amount: number;       // stars
-  summa: number;        // total UZS
-  sent: string | null | undefined;  // @username — may be null/undefined
+  amount: number | string;
+  summa: number;
+  to: string | null | undefined;      // API returns "to" field
+  sent?: string | null | undefined;   // fallback
   status: string;
   type: string;
-  date: string;         // "12.01.2026 | 12:03"
+  date: string;
 }
 
 export function HistoryPage() {
@@ -47,41 +66,43 @@ export function HistoryPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Map backend status → frontend friendly status
-  const normalizeStatus = (backendStatus: string) => {
-    const s = backendStatus.trim();
-    return statusMap[s]?.label || 'unknown';
+  const getStatusConfig = (backendStatus: string) => {
+    const s = (backendStatus || '').trim();
+    return statusMap[s] || { label: s || 'Nomaʼlum', variant: 'default', icon: null };
   };
 
-  const getStatusConfig = (backendStatus: string) => {
-    const s = backendStatus.trim();
-    return statusMap[s] || {
-      label: 'unknown',
-      variant: 'default',
-      icon: null,
+  const getTypeConfig = (type: string) => {
+    return typeConfig[type] || {
+      icon: <Star className="w-5 h-5" />,
+      color: '#6b7280',
+      bg: 'linear-gradient(135deg, #374151, #6b7280)',
     };
   };
 
   const parseDate = (dateStr: string) => {
-    // "12.01.2026 | 12:03"  →  try to parse
     try {
       const [datePart, timePart] = dateStr.split(' | ');
       const [dd, mm, yyyy] = datePart.split('.');
       return new Date(`${yyyy}-${mm}-${dd}T${timePart}:00`);
-    } catch (err) {
-      return new Date(dateStr); // fallback
+    } catch {
+      return new Date(dateStr);
     }
   };
 
-  const formatUZS = (amount: number) => {
-    return new Intl.NumberFormat('uz-UZ').format(amount);
+  const formatUZS = (amount: number) =>
+    new Intl.NumberFormat('uz-UZ').format(amount);
+
+  // Get recipient username — API uses "to", fallback to "sent"
+  const getUsername = (order: Order): string => {
+    const raw = order.to ?? order.sent ?? '';
+    if (!raw) return '';
+    return raw.startsWith('@') ? raw : `@${raw}`;
   };
 
   // Filter orders
-  const filteredOrders = orders.filter((order: Order) => {
+  const filteredOrders = (orders as Order[]).filter((order) => {
     if (filter === 'all') return true;
-    const normStatus = normalizeStatus(order.status);
-    return normStatus === filter;
+    return (order.status || '').trim() === filter;
   });
 
   if (loading) {
@@ -99,23 +120,20 @@ export function HistoryPage() {
       <div className="p-4 space-y-5">
         {/* Filters */}
         <ChipGroup>
-          <Chip selected={filter === 'all'}    onClick={() => setFilter('all')}>Hamamsi</Chip>
-          <Chip selected={filter === 'completed'} onClick={() => setFilter('completed')}>Tasdiqlangan</Chip>
-          <Chip selected={filter === 'pending'}   onClick={() => setFilter('pending')}>Jarayonda</Chip>
-          <Chip selected={filter === 'failed'}    onClick={() => setFilter('failed')}>Bekor qilingan</Chip>
+          <Chip selected={filter === 'all'}         onClick={() => setFilter('all')}>Hammasi</Chip>
+          <Chip selected={filter === 'Successful'}  onClick={() => setFilter('Successful')}>Tasdiqlangan</Chip>
+          <Chip selected={filter === 'Pending'}     onClick={() => setFilter('Pending')}>Jarayonda</Chip>
+          <Chip selected={filter === 'Failed'}      onClick={() => setFilter('Failed')}>Bekor qilingan</Chip>
         </ChipGroup>
 
         {/* Transaction List */}
         {filteredOrders.length > 0 ? (
           <div className="space-y-3">
-            {filteredOrders.map((tx: Order) => {
+            {filteredOrders.map((tx) => {
               const statusCfg = getStatusConfig(tx.status);
-              const dateObj = parseDate(tx.date);
-
-              // FIX: guard against null/undefined tx.sent
-              const rawSent = tx.sent ?? '';
-              const username = rawSent.startsWith('@') ? rawSent : `@${rawSent}`;
-              const displayName = username.replace('@', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'User';
+              const typeCfg   = getTypeConfig(tx.type);
+              const dateObj   = parseDate(tx.date);
+              const username  = getUsername(tx);
 
               return (
                 <Card
@@ -124,23 +142,44 @@ export function HistoryPage() {
                   className="cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
                 >
                   <div className="p-4 space-y-3">
+                    {/* Top row: avatar + type/username + status icon */}
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-medium flex-shrink-0">
-                        {displayName.charAt(0)}
+                      {/* Type avatar */}
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                        style={{ background: typeCfg.bg }}
+                      >
+                        {typeCfg.icon}
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{displayName}</p>
-                        <p className="text-sm text-muted-foreground">{username}</p>
+                        {/* TYPE shown as title */}
+                        <p className="font-semibold truncate" style={{ color: typeCfg.color }}>
+                          {tx.type}
+                        </p>
+                        {/* Username shown below */}
+                        <p className="text-sm text-muted-foreground truncate">
+                          {username || '—'}
+                        </p>
                       </div>
+
                       {statusCfg.icon}
                     </div>
 
+                    {/* Middle row: amount + badge */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-4 h-4 text-telegram-gold" />
-                          <span className="font-medium">{tx.amount}</span>
-                        </div>
+                        {tx.type === 'Stars' ? (
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-yellow-400" />
+                            <span className="font-medium">{tx.amount}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <Crown className="w-4 h-4 text-purple-400" />
+                            <span className="font-medium">{tx.amount}</span>
+                          </div>
+                        )}
                         <div className="text-muted-foreground font-medium">
                           {formatUZS(tx.summa)} UZS
                         </div>
@@ -153,6 +192,7 @@ export function HistoryPage() {
                       </Badge>
                     </div>
 
+                    {/* Date row */}
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="w-3.5 h-3.5" />
                       {format(dateObj, 'MMM d, yyyy • HH:mm')}
@@ -165,11 +205,11 @@ export function HistoryPage() {
         ) : (
           <EmptyState
             icon={<History className="w-16 h-16 text-muted-foreground/70" />}
-            title="No transactions yet"
+            title="Tranzaksiya yo'q"
             description={
               filter === 'all'
-                ? "Your purchase history will appear here"
-                : `No ${filter} transactions found`
+                ? "Hozircha tranzaksiya mavjud emas"
+                : `Bu filtr bo'yicha tranzaksiya topilmadi`
             }
           />
         )}
@@ -182,26 +222,26 @@ export function HistoryPage() {
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md z-50 max-h-[85vh] overflow-y-auto rounded-2xl">
             {selectedOrder && (() => {
               const statusCfg = getStatusConfig(selectedOrder.status);
-              const dateObj = parseDate(selectedOrder.date);
-
-              // FIX: guard against null/undefined selectedOrder.sent
-              const rawSent = selectedOrder.sent ?? '';
-              const username = rawSent.startsWith('@') ? rawSent : `@${rawSent}`;
-              const displayName = username.replace('@', '');
+              const typeCfg   = getTypeConfig(selectedOrder.type);
+              const dateObj   = parseDate(selectedOrder.date);
+              const username  = getUsername(selectedOrder);
 
               return (
                 <Card className="shadow-2xl border-0">
                   <div className="p-6 space-y-6">
                     {/* Header */}
                     <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white text-2xl font-medium">
-                        {displayName.charAt(0).toUpperCase()}
+                      <div
+                        className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-white"
+                        style={{ background: typeCfg.bg }}
+                      >
+                        <span style={{ transform: 'scale(1.4)', display: 'flex' }}>{typeCfg.icon}</span>
                       </div>
-                      <Dialog.Title className="text-xl font-semibold">
-                        {displayName || 'User'}
+                      <Dialog.Title className="text-xl font-semibold" style={{ color: typeCfg.color }}>
+                        {selectedOrder.type}
                       </Dialog.Title>
                       <Dialog.Description className="text-sm text-muted-foreground mt-1">
-                        {username}
+                        {username || '—'}
                       </Dialog.Description>
                     </div>
 
@@ -219,13 +259,16 @@ export function HistoryPage() {
                     {/* Details */}
                     <div className="space-y-3 bg-accent/30 rounded-xl p-4">
                       <div className="flex justify-between py-2 border-b border-border/60">
-                        <span className="text-muted-foreground">Buyurtma id</span>
-                        <span className="font-mono">{selectedOrder.order_id}</span>
+                        <span className="text-muted-foreground">Buyurtma ID</span>
+                        <span className="font-mono">#{selectedOrder.order_id}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/60">
-                        <span className="text-muted-foreground">Stars</span>
+                        <span className="text-muted-foreground">Miqdor</span>
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-4 h-4 text-telegram-gold" />
+                          {selectedOrder.type === 'Stars'
+                            ? <Sparkles className="w-4 h-4 text-yellow-400" />
+                            : <Crown className="w-4 h-4 text-purple-400" />
+                          }
                           <span className="font-semibold">{selectedOrder.amount}</span>
                         </div>
                       </div>
@@ -233,17 +276,14 @@ export function HistoryPage() {
                         <span className="text-muted-foreground">Summa</span>
                         <span className="font-bold">{formatUZS(selectedOrder.summa)} UZS</span>
                       </div>
+                      <div className="flex justify-between py-2 border-b border-border/60">
+                        <span className="text-muted-foreground">Kimga</span>
+                        <span className="font-mono text-sm">{username || '—'}</span>
+                      </div>
                       <div className="flex justify-between py-2">
                         <span className="text-muted-foreground">Sana</span>
                         <span>{format(dateObj, 'dd MMM yyyy • HH:mm')}</span>
                       </div>
-                    </div>
-
-                    {/* Simple status note */}
-                    <div className="text-center text-sm text-muted-foreground pt-2">
-                      {statusCfg.label === 'completed' && "Transaction completed successfully ✓"}
-                      {statusCfg.label === 'pending' && "Waiting for processing..."}
-                      {statusCfg.label === 'failed' && "Transaction was not completed"}
                     </div>
 
                     <Dialog.Close asChild>
@@ -261,3 +301,5 @@ export function HistoryPage() {
     </div>
   );
 }
+
+export default HistoryPage;
