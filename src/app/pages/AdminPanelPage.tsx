@@ -31,7 +31,7 @@ export function AdminPanelPage() {
     const fetchStats = async () => {
       try {
         const res = await fetch(
-          'https://m4746.myxvest.ru/webapp/statistics.php'
+          'https://tezpremium.uz/MilliyDokon/control/statistics.php'
         );
         const data = await res.json();
 
@@ -55,7 +55,7 @@ export function AdminPanelPage() {
     const fetchRate = async () => {
       try {
         const res = await fetch(
-          'https://m4746.myxvest.ru/webapp/settings.php'
+          'https://tezpremium.uz/MilliyDokon/control/setdata.php?'
         );
         const data = await res.json();
 
@@ -87,7 +87,7 @@ export function AdminPanelPage() {
 
     try {
       const res = await fetch(
-        `https://m4746.myxvest.ru/webapp/setdata.php?type=star&value=${rate}`
+        `https://tezpremium.uz/MilliyDokon/control/setdata.php?type=star&value=${rate}`
       );
       const data = await res.json();
 
@@ -277,7 +277,7 @@ function PriceBox({
     const loadValue = async () => {
       try {
         const res = await fetch(
-          'https://m4746.myxvest.ru/webapp/settings.php'
+          'https://tezpremium.uz/MilliyDokon/control/settings.php'
         );
         const data = await res.json();
 
@@ -302,7 +302,7 @@ function PriceBox({
     try {
       setLoading(true);
       const res = await fetch(
-        `https://m4746.myxvest.ru/webapp/setdata.php?type=${type}&value=${num}`
+        `https://tezpremium.uz/MilliyDokon/control/setdata.php?type=${type}&value=${num}`
       );
       const data = await res.json();
 

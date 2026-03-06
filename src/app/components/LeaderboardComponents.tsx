@@ -1,4 +1,4 @@
-import { Trophy, Award, Medal } from 'lucide-react';
+import { Trophy, Medal } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
 import { LeaderboardEntry } from '@/app/context/AppContext';
@@ -10,8 +10,11 @@ interface PodiumCardProps {
 export function PodiumCard({ entries }: PodiumCardProps) {
   const top3 = entries.slice(0, 3);
   
-  // Rearrange for podium display: [2nd, 1st, 3rd]
-  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const podiumOrder = [
+    top3[1] ? { entry: top3[1], podiumIndex: 0 } : null,
+    top3[0] ? { entry: top3[0], podiumIndex: 1 } : null,
+    top3[2] ? { entry: top3[2], podiumIndex: 2 } : null,
+  ].filter(Boolean);
   
   const heights = ['h-24', 'h-32', 'h-20'];
   const icons = [Medal, Trophy, Medal];
@@ -26,20 +29,20 @@ export function PodiumCard({ entries }: PodiumCardProps) {
 
   return (
     <div className="flex items-end justify-center gap-2 px-4 py-6">
-      {podiumOrder.map((entry, index) => {
+      {podiumOrder.map(({ entry, podiumIndex }) => {
         if (!entry) return null;
         
-        const Icon = icons[index];
+        const Icon = icons[podiumIndex];
         const actualRank = entry.rank;
         
         return (
-          <div key={entry.username} className="flex-1 flex flex-col items-center gap-2">
+          <div key={`podium-${podiumIndex}`} className="flex-1 flex flex-col items-center gap-2">
             <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xl relative ${
               actualRank === 1 ? 'ring-4 ring-telegram-gold/30' : ''
             }`}>
               {entry.displayName.charAt(0).toUpperCase()}
-              <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full ${bgColors[index]} flex items-center justify-center border-2 border-background`}>
-                <Icon className={`w-3.5 h-3.5 ${colors[index]}`} />
+              <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full ${bgColors[podiumIndex]} flex items-center justify-center border-2 border-background`}>
+                <Icon className={`w-3.5 h-3.5 ${colors[podiumIndex]}`} />
               </div>
             </div>
             
@@ -53,7 +56,7 @@ export function PodiumCard({ entries }: PodiumCardProps) {
               </div>
             </div>
             
-            <div className={`${heights[index]} w-full bg-gradient-to-t ${
+            <div className={`${heights[podiumIndex]} w-full bg-gradient-to-t ${
               actualRank === 1 ? 'from-telegram-gold/20 to-telegram-gold/5' : 'from-muted to-muted/50'
             } rounded-t-xl flex items-end justify-center pb-3`}>
               <span className="text-2xl font-bold">{actualRank}</span>

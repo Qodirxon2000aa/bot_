@@ -16,7 +16,7 @@ export const TelegramProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const url = `https://m4746.myxvest.ru/webapp/get_user.php?user_id=${telegramId}`;
+      const url = `https://tezpremium.uz/MilliyDokon/main/get_user.php?user_id=${telegramId}`;
       console.log("📡 Fetching user:", url);
 
       const res = await fetch(url, {
@@ -62,7 +62,7 @@ export const TelegramProvider = ({ children }) => {
 
   const fetchOrders = async (telegramId) => {
     try {
-      const url = `https://m4746.myxvest.ru/webapp/history.php?user_id=${telegramId}`;
+      const url = `https://tezpremium.uz/MilliyDokon/main/orders.php?user_id=${telegramId}`;
 
       console.log("📦 Fetching orders:", url);
 
@@ -83,7 +83,7 @@ export const TelegramProvider = ({ children }) => {
 
   const fetchPayments = async (telegramId) => {
     try {
-      const url = `https://m4746.myxvest.ru/webapp/payments.php?user_id=${telegramId}`;
+      const url = `https://tezpremium.uz/MilliyDokon/main/payments.php?user_id=${telegramId}`;
 
       console.log("💳 Fetching payments:", url);
 

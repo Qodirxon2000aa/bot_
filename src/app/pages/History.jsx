@@ -74,7 +74,7 @@ export default function HistoryPage() {
       try {
         setLoading(true);
         const res = await fetch(
-          `https://m4746.myxvest.ru/webapp/payments.php?user_id=${user.id}`
+          `https://tezpremium.uz/MilliyDokon/main/payments.php?user_id=${user.id}`
         );
 
         if (!res.ok) throw new Error(`Server xatosi: ${res.status}`);
@@ -108,16 +108,33 @@ export default function HistoryPage() {
     return statusMap[key] || statusMap.default;
   };
 
-  const parseApiDate = (dateStr) => {
-    try {
-      const cleaned = dateStr.replace(/📆|⏰/g, '').trim();
-      const [datePart, timePart] = cleaned.split('|').map((s) => s.trim());
+const parseApiDate = (dateStr) => {
+  try {
+    if (!dateStr) return new Date();
+
+    const cleaned = dateStr.replace(/📆|⏰/g, '').trim();
+
+    // Format: "01.05.2025 | 14:30"
+    const [datePart, timePart] = cleaned.split('|').map((s) => s.trim());
+
+    if (datePart) {
       const [dd, mm, yyyy] = datePart.split('.');
-      return new Date(`${yyyy}-${mm}-${dd}T${timePart}:00`);
-    } catch {
-      return new Date();
+      if (dd && mm && yyyy) {
+        const time = timePart || '00:00';
+        const parsed = new Date(`${yyyy}-${mm}-${dd}T${time}:00`);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
     }
-  };
+
+    // Fallback: to'g'ridan-to'g'ri parse qilishga urinish
+    const fallback = new Date(dateStr);
+    if (!isNaN(fallback.getTime())) return fallback;
+
+    return new Date();
+  } catch {
+    return new Date();
+  }
+};
 
   const handlePay = (link) => {
     if (link && tg) {
