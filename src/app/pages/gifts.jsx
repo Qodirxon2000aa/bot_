@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useTelegram } from "@/app/context/TelegramContext";
 import { TopBar } from "@/app/components/ui/TopBar";
@@ -26,7 +26,6 @@ import tree       from "../assets/tree.json";
 import new_bear   from "../assets/new_bear.json";
 import march_bear from "../assets/march_bear.json";
 
-// Module level — hech qachon o'zgarmaydi, re-render muammosi yo'q
 const GIFT_ANIMATIONS = {
   heart, teddy_bear, gift_box, rose, cake, bouquet,
   rocket, trophy, ring, diamond, champagne,
@@ -51,9 +50,38 @@ const NFT_FILTERS = [
   { key: "old",       label: "Eski"     },
 ];
 
-// Alohida memo-langan komponent — faqat `name` o'zgarganda qayta render bo'ladi
+// ── Ekranga kiranda bir marta ishlovchi animatsiya ──
 const GiftAnimation = ({ name }) => {
-  const animData = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
+  const animData   = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
+  const wrapRef    = useRef(null);
+  const lottieRef  = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [played,  setPlayed]  = useState(false);
+
+  useEffect(() => {
+    if (!wrapRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect(); // bir marta kifoya
+        }
+      },
+      { threshold: 0.4 } // 40% ko'ringanda trigger
+    );
+
+    observer.observe(wrapRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // visible bo'lganda play
+  useEffect(() => {
+    if (visible && !played && lottieRef.current) {
+      lottieRef.current.goToAndPlay(0, true);
+      setPlayed(true);
+    }
+  }, [visible, played]);
 
   if (!animData) {
     return (
@@ -64,18 +92,20 @@ const GiftAnimation = ({ name }) => {
   }
 
   return (
-    <Lottie
-      animationData={animData}
-      loop={false}
-      autoplay
-      // interactivity va renderer sozlamalari — silliq SVG rendering
-      rendererSettings={{
-        preserveAspectRatio: "xMidYMid meet",
-        progressiveLoad: false,
-        hideOnTransparent: true,
-      }}
-      style={{ width: "80%", height: "80%", display: "block" }}
-    />
+    <div ref={wrapRef} className="w-full h-full flex items-center justify-center">
+      <Lottie
+        lottieRef={lottieRef}
+        animationData={animData}
+        loop={false}
+        autoplay={false}   // biz qo'lda boshqaramiz
+        rendererSettings={{
+          preserveAspectRatio: "xMidYMid meet",
+          progressiveLoad: false,
+          hideOnTransparent: true,
+        }}
+        style={{ width: "82%", height: "82%", display: "block" }}
+      />
+    </div>
   );
 };
 
@@ -106,7 +136,7 @@ export default function GiftsPage() {
       const data = await res.json();
       if (data.ok) setGifts(data.gifts || []);
       else setNftError("Ma'lumot olishda xatolik");
-    } catch (e) {
+    } catch {
       setNftError("Serverga ulanib bo'lmadi");
     } finally {
       setNftLoading(false);
@@ -159,7 +189,7 @@ export default function GiftsPage() {
 
   const canBuy = (price) => userBalance >= price;
 
-  const oddiyList     = useMemo(() =>
+  const oddiyList = useMemo(() =>
     [...oddiyGifts].sort((a, b) =>
       oddiyFilter === "cheap" ? a.price - b.price : b.price - a.price
     ), [oddiyGifts, oddiyFilter]
@@ -170,7 +200,7 @@ export default function GiftsPage() {
     [oddiyGifts]
   );
 
-  const minNftPrice  = useMemo(() =>
+  const minNftPrice = useMemo(() =>
     gifts.length > 0 ? Math.min(...gifts.map((g) => g.price)) : 0,
     [gifts]
   );
@@ -214,8 +244,8 @@ export default function GiftsPage() {
         {/* Main tabs */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { key: "nft",   icon: <Sparkles className="w-4 h-4" />,                    label: "NFT Giftlar"   },
-            { key: "oddiy", icon: <span className="text-base leading-none">🎁</span>,  label: "Oddiy Giftlar" },
+            { key: "nft",   icon: <Sparkles className="w-4 h-4" />,                   label: "NFT Giftlar"   },
+            { key: "oddiy", icon: <span className="text-base leading-none">🎁</span>, label: "Oddiy Giftlar" },
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={() => handleMainTab(key)}
               className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold border transition-all
@@ -332,7 +362,6 @@ export default function GiftsPage() {
                           <div className="p-2.5 space-y-1.5">
                             <p className="font-semibold text-xs leading-tight truncate">{formatName(gift.nft_id)}</p>
                             <p className="text-[10px] text-muted-foreground/70 truncate">{gift.model} · {gift.backdrop}</p>
-                            <p className="text-[10px] text-muted-foreground/40 font-mono truncate">#{gift.nft_id}</p>
                             <p className={`font-bold text-sm ${affordable ? "" : "text-red-500/70"}`}>
                               {gift.price.toLocaleString("uz-UZ")}
                               <span className="font-normal text-xs text-muted-foreground ml-0.5">UZS</span>
@@ -477,7 +506,6 @@ export default function GiftsPage() {
                             <p className="font-semibold text-xs leading-tight truncate capitalize">
                               {gift.name.replace(/_/g, " ")}
                             </p>
-                            <p className="text-[10px] text-muted-foreground/40 font-mono truncate">#{gift.id}</p>
                             <p className={`font-bold text-sm ${affordable ? "" : "text-red-500/70"}`}>
                               {gift.price.toLocaleString("uz-UZ")}
                               <span className="font-normal text-xs text-muted-foreground ml-0.5">UZS</span>
