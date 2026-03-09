@@ -7,6 +7,7 @@ import Lottie from "lottie-react";
 import {
   Copy, Eye, ShoppingCart, Sparkles, CheckCircle2,
   Gift, Loader2, AlertCircle, RefreshCw, Wallet,
+  X, User, Send, CheckCheck, EyeOff,
 } from "lucide-react";
 
 import heart      from "../assets/heart.json";
@@ -24,12 +25,12 @@ import love_teddy from "../assets/love_teddy.json";
 import love_heart from "../assets/love_heart.json";
 import tree       from "../assets/tree.json";
 import new_bear   from "../assets/new_bear.json";
-import march_bear from "../assets/march_bear.json";
+import bear       from "../assets/bear.json";
 
 const GIFT_ANIMATIONS = {
   heart, teddy_bear, gift_box, rose, cake, bouquet,
   rocket, trophy, ring, diamond, champagne,
-  love_teddy, love_heart, tree, new_bear, march_bear,
+  love_teddy, love_heart, tree, new_bear, bear,
 };
 
 const GIFT_EMOJIS = {
@@ -41,6 +42,8 @@ const GIFT_EMOJIS = {
 
 const NFT_API_BASE   = "https://tezpremium.uz/uzbstar/giftlar.php";
 const ODDIY_API_BASE = "https://tezpremium.uz/MilliyDokon/gifts/info.php";
+const ORDER_API_BASE = "https://tezpremium.uz/MilliyDokon/gifts/order.php";
+const USER_CHECK_API = "https://tezpremium.uz/starsapi/user.php";
 
 const NFT_FILTERS = [
   { key: "all",       label: "Barcha"   },
@@ -52,30 +55,28 @@ const NFT_FILTERS = [
 
 // ── Ekranga kiranda bir marta ishlovchi animatsiya ──
 const GiftAnimation = ({ name }) => {
-  const animData   = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
-  const wrapRef    = useRef(null);
-  const lottieRef  = useRef(null);
+  const animData  = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
+  const wrapRef   = useRef(null);
+  const lottieRef = useRef(null);
   const [visible, setVisible] = useState(false);
   const [played,  setPlayed]  = useState(false);
 
   useEffect(() => {
-    if (!wrapRef.current) return;
-
+    const el = wrapRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
-          observer.disconnect(); // bir marta kifoya
+          observer.disconnect();
         }
       },
-      { threshold: 0.4 } // 40% ko'ringanda trigger
+      { threshold: 0.3 }
     );
-
-    observer.observe(wrapRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // visible bo'lganda play
   useEffect(() => {
     if (visible && !played && lottieRef.current) {
       lottieRef.current.goToAndPlay(0, true);
@@ -83,28 +84,272 @@ const GiftAnimation = ({ name }) => {
     }
   }, [visible, played]);
 
-  if (!animData) {
-    return (
-      <span className="text-5xl select-none leading-none">
-        {GIFT_EMOJIS[name] || "🎁"}
-      </span>
-    );
-  }
-
   return (
     <div ref={wrapRef} className="w-full h-full flex items-center justify-center">
-      <Lottie
-        lottieRef={lottieRef}
-        animationData={animData}
-        loop={false}
-        autoplay={false}   // biz qo'lda boshqaramiz
-        rendererSettings={{
-          preserveAspectRatio: "xMidYMid meet",
-          progressiveLoad: false,
-          hideOnTransparent: true,
-        }}
-        style={{ width: "82%", height: "82%", display: "block" }}
-      />
+      {animData ? (
+        <Lottie
+          lottieRef={lottieRef}
+          animationData={animData}
+          loop={false}
+          autoplay={false}
+          rendererSettings={{
+            preserveAspectRatio: "xMidYMid meet",
+            progressiveLoad: false,
+            hideOnTransparent: true,
+          }}
+          style={{ width: "82%", height: "82%", display: "block" }}
+        />
+      ) : (
+        <span className="text-5xl select-none leading-none">
+          {GIFT_EMOJIS[name] || "🎁"}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// ── BUY MODAL for Oddiy Gifts ──
+const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
+  const [username, setUsername]       = useState("");
+  const [anonim, setAnonim]           = useState(false);
+  const [commentOn, setCommentOn]     = useState(false);
+  const [comment, setComment]         = useState("");
+  const [userInfo, setUserInfo]       = useState(null);
+  const [checkLoading, setCheckLoad]  = useState(false);
+  const [checkError, setCheckError]   = useState(null);
+  const [orderLoading, setOrderLoad]  = useState(false);
+  const [orderError, setOrderError]   = useState(null);
+  const [ordered, setOrdered]         = useState(false);
+  const debounceRef                   = useRef(null);
+
+  const cleanUsername = username.replace(/^@/, "").trim();
+
+  useEffect(() => {
+    if (!cleanUsername) { setUserInfo(null); setCheckError(null); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setCheckLoad(true);
+      setCheckError(null);
+      setUserInfo(null);
+      try {
+        const res  = await fetch(`${USER_CHECK_API}?username=${encodeURIComponent(cleanUsername)}`);
+        const data = await res.json();
+        if (data.username) setUserInfo(data);
+        else setCheckError(data.message || data.error || "Foydalanuvchi topilmadi");
+      } catch {
+        setCheckError("Tekshirib bo'lmadi");
+      } finally {
+        setCheckLoad(false);
+      }
+    }, 600);
+    return () => clearTimeout(debounceRef.current);
+  }, [cleanUsername]);
+
+  const handleOrder = async () => {
+    if (!userInfo && !anonim) return;
+    setOrderLoad(true);
+    setOrderError(null);
+    try {
+      const params = new URLSearchParams({
+        user_id:  apiUser?.id || "",
+        gift_id:  gift.id,
+        username: `@${cleanUsername}`,
+        anonim:   anonim ? "true" : "false",
+      });
+      if (commentOn && comment.trim()) params.append("comment", comment.trim());
+      const res  = await fetch(`${ORDER_API_BASE}?${params.toString()}`);
+      const data = await res.json();
+      if (data.ok) {
+        setOrdered(true);
+        setTimeout(() => { onSuccess && onSuccess(); onClose(); }, 2000);
+      } else {
+        setOrderError(data.message || "Xatolik yuz berdi");
+      }
+    } catch {
+      setOrderError("Serverga ulanib bo'lmadi");
+    } finally {
+      setOrderLoad(false);
+    }
+  };
+
+  const canOrder = !orderLoading && cleanUsername && (userInfo || anonim) && !ordered;
+
+  return (
+    <div className="fixed inset-1 z-50 flex items-end justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Sheet — tepadan tushadi */}
+      <div
+        className="relative w-full max-w-md bg-background rounded-b-3xl shadow-2xl z-10 overflow-y-auto"
+        style={{ maxHeight: "92vh" }}
+      >
+        <div className="p-5 pb-8">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-bold text-lg">Gift yuborish</h2>
+              <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                {gift.name.replace(/_/g, " ")} · {gift.price.toLocaleString("uz-UZ")} UZS
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Gift preview */}
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-accent/30 overflow-hidden mb-5">
+            <GiftAnimation name={gift.name} />
+          </div>
+
+          {/* Username input */}
+          <div className="space-y-2 mb-3">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Kimga yuborish?
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">@</span>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                inputMode="text"
+                className="w-full pl-7 pr-10 py-3 rounded-xl bg-accent/40 border border-border text-sm font-medium focus:outline-none focus:border-primary focus:bg-accent/20 transition-all placeholder:text-muted-foreground/50"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {checkLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                {!checkLoading && userInfo && <CheckCheck className="w-4 h-4 text-green-500" />}
+                {!checkLoading && checkError && cleanUsername && <AlertCircle className="w-4 h-4 text-red-500" />}
+              </div>
+            </div>
+
+            {/* User info card */}
+            {userInfo && !checkLoading && (
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
+                {userInfo.photo ? (
+                  <img src={userInfo.photo} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-green-500" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{userInfo.name || userInfo.first_name || cleanUsername}</p>
+                  <p className="text-xs text-muted-foreground">@{userInfo.username || cleanUsername}</p>
+                </div>
+                <CheckCheck className="w-4 h-4 text-green-500 shrink-0 ml-auto" />
+              </div>
+            )}
+            {checkError && cleanUsername && !checkLoading && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <p className="text-xs text-red-500">{checkError}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Comment toggle */}
+          <button
+            onClick={() => setCommentOn((v) => !v)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all mb-2 text-left
+              ${commentOn
+                ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
+                : "bg-accent/30 border-border text-muted-foreground hover:bg-accent/50"}`}
+          >
+            <span className="text-base shrink-0">💬</span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Izoh qo'shish</p>
+              <p className="text-[11px] opacity-70">Giftga xabar biriktirish</p>
+            </div>
+            <div className={`ml-auto w-9 h-5 rounded-full transition-all relative shrink-0 ${commentOn ? "bg-blue-500" : "bg-border"}`}>
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${commentOn ? "left-4" : "left-0.5"}`} />
+            </div>
+          </button>
+
+          {/* Comment input — only when ON */}
+          {commentOn && (
+            <div className="mb-3">
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Tabrik yoki xabar yozing..."
+                maxLength={200}
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl bg-accent/40 border border-border text-sm font-medium focus:outline-none focus:border-blue-500 focus:bg-accent/20 transition-all placeholder:text-muted-foreground/50 resize-none"
+              />
+              <p className="text-right text-[10px] text-muted-foreground/50 mt-1">{comment.length}/200</p>
+            </div>
+          )}
+
+          {/* Anonim toggle */}
+          <button
+            onClick={() => setAnonim((v) => !v)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all mb-4 text-left
+              ${anonim
+                ? "bg-primary/10 border-primary/30 text-primary"
+                : "bg-accent/30 border-border text-muted-foreground hover:bg-accent/50"}`}
+          >
+            <EyeOff className="w-4 h-4 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Anonim yuborish</p>
+              <p className="text-[11px] opacity-70">Kim yuborganini ko'rsatmaydi</p>
+            </div>
+            <div className={`ml-auto w-9 h-5 rounded-full transition-all relative shrink-0 ${anonim ? "bg-primary" : "bg-border"}`}>
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${anonim ? "left-4" : "left-0.5"}`} />
+            </div>
+          </button>
+
+          {/* Order error */}
+          {orderError && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 mb-3">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <p className="text-xs text-red-500">{orderError}</p>
+            </div>
+          )}
+
+          {/* Success state */}
+          {ordered && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 mb-3">
+              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+              <p className="text-xs text-green-600 font-medium">Gift muvaffaqiyatli yuborildi! 🎉</p>
+            </div>
+          )}
+
+          {/* Submit button */}
+          <button
+            onClick={handleOrder}
+            disabled={!canOrder}
+            className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
+              ${canOrder
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20"
+                : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+          >
+            {orderLoading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+            ) : ordered ? (
+              <><CheckCircle2 className="w-4 h-4" />Yuborildi!</>
+            ) : (
+              <><Send className="w-4 h-4" />Gift yuborish</>
+            )}
+          </button>
+
+          {!canOrder && !orderLoading && !ordered && (
+            <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+              {!cleanUsername ? "Username kiriting" : checkError ? "Foydalanuvchi topilmadi" : "Tekshirilmoqda..."}
+            </p>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 };
@@ -123,6 +368,7 @@ export default function GiftsPage() {
   const [oddiyGifts, setOddiyGifts]     = useState([]);
   const [oddiyLoading, setOddiyLoading] = useState(false);
   const [oddiyError, setOddiyError]     = useState(null);
+  const [buyGift, setBuyGift]           = useState(null); // selected oddiy gift for modal
 
   const userBalance = Number(apiUser?.balance || 0);
 
@@ -510,7 +756,10 @@ export default function GiftsPage() {
                               {gift.price.toLocaleString("uz-UZ")}
                               <span className="font-normal text-xs text-muted-foreground ml-0.5">UZS</span>
                             </p>
-                            <button onClick={() => affordable && navigate("/buy", { state: { gift } })} disabled={!affordable}
+                            {/* ── UPDATED: open modal instead of navigate ── */}
+                            <button
+                              onClick={() => affordable && setBuyGift(gift)}
+                              disabled={!affordable}
                               className={`w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-semibold transition-all mt-1
                                 ${affordable
                                   ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
@@ -531,6 +780,18 @@ export default function GiftsPage() {
         )}
 
       </div>
+
+      {/* ── BUY MODAL ── */}
+      {buyGift && (
+        <BuyOddiyModal
+          gift={buyGift}
+          apiUser={apiUser}
+          onClose={() => setBuyGift(null)}
+          onSuccess={() => {
+            // optionally refresh balance or show toast
+          }}
+        />
+      )}
     </div>
   );
 }
