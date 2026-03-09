@@ -181,7 +181,7 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
 
       {/* Sheet — tepadan tushadi */}
       <div
-        className="relative w-full max-w-md bg-background rounded-b-3xl shadow-2xl z-10 overflow-y-auto"
+        className="relative w-full max-w-md bg-background rounded-b-3xl shadow-2xl z-10 overflow-y-auto pb-[50px]"
         style={{ maxHeight: "92vh" }}
       >
         <div className="p-5 pb-8">
