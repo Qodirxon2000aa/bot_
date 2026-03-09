@@ -340,25 +340,25 @@ const generateAIGreeting = async () => {
               </div>
               
               {showAiInput && (
-                <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-2">
-                  <p className="text-[11px] text-blue-600 font-medium">Kimga va nima uchunligini ayting:</p>
-                  <div className="flex gap-2">
-                    <input 
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Masalan: Onamga tug'ilgan kun tabrigi"
-                      className="flex-1 bg-white border border-border rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500"
-                    />
-                    <button 
-                      onClick={generateAIGreeting}
-                      disabled={aiLoading || !aiPrompt}
-                      className="bg-blue-500 text-white p-2 rounded-lg disabled:opacity-50"
-                    >
-                      {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-2">
+    <p className="text-[11px] text-blue-600 font-medium">Kimga va nima uchunligini ayting:</p>
+    <div className="flex gap-2">
+      <input 
+        value={aiPrompt}
+        onChange={(e) => setAiPrompt(e.target.value)}
+        placeholder="Masalan: Onamga tug'ilgan kun tabrigi"
+        className="flex-1 bg-white text-black placeholder:text-gray-400 border border-border rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500"
+      />
+      <button 
+        onClick={generateAIGreeting}
+        disabled={aiLoading || !aiPrompt}
+        className="bg-blue-500 text-white p-2 rounded-lg disabled:opacity-50"
+      >
+        {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+      </button>
+    </div>
+  </div>
+)}
 
               <textarea
                 value={comment}
