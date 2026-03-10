@@ -368,6 +368,7 @@ const AnonimToggle = ({ anonim, setAnonim }) => (
 
 // ── BUY MODAL for Oddiy Gifts ──
 const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
+  const navigate = useNavigate();
   const userSearch = useUserSearch();
   const aiComment = useAIComment();
   const [orderLoading, setOrderLoad] = useState(false);
@@ -377,23 +378,42 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
   const { cleanUsername, anonim, userInfo } = userSearch;
   const { commentOn, comment } = aiComment;
 
+  const getSenderId = () => (
+    apiUser?.id || apiUser?.user_id || apiUser?.tg_id || apiUser?.telegram_id || ""
+  );
+
   const handleOrder = async () => {
+    if (!cleanUsername) return;
     if (!userInfo && !anonim) return;
+
+    const senderId = getSenderId();
+    if (!senderId) {
+      setOrderError("Foydalanuvchi ID topilmadi. Iltimos qayta kiring.");
+      return;
+    }
+
     setOrderLoad(true);
     setOrderError(null);
     try {
       const params = new URLSearchParams({
-        user_id: apiUser?.id || "",
-        gift_id: gift.id,
+        user_id: String(senderId),
+        gift_id: String(gift.id),
         username: `@${cleanUsername}`,
         anonim: anonim ? "true" : "false",
       });
       if (commentOn && comment.trim()) params.append("comment", comment.trim());
+
       const res = await fetch(`${ORDER_API_BASE}?${params.toString()}`);
       const data = await res.json();
-      if (data.ok) {
+
+      // ── data.ok yoki data.order_id bo'lsa muvaffaqiyatli ──
+      if (data.ok || data.order_id) {
         setOrdered(true);
-        setTimeout(() => { onSuccess && onSuccess(); onClose(); }, 2000);
+        onSuccess && onSuccess();
+        setTimeout(() => {
+          onClose();
+          navigate("/gifts");
+        }, 1800);
       } else {
         setOrderError(data.message || "Xatolik yuz berdi");
       }
@@ -425,32 +445,38 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
       )}
 
       {ordered && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 mb-3">
-          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-          <p className="text-xs text-green-600 font-medium">Gift muvaffaqiyatli yuborildi! 🎉</p>
+        <div className="flex flex-col items-center justify-center py-6 gap-3 animate-in fade-in zoom-in">
+          <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-green-500" />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-green-600">Yuborildi! 🎉</p>
+            <p className="text-xs text-muted-foreground mt-1">Gift muvaffaqiyatli jo'natildi</p>
+          </div>
         </div>
       )}
 
-      <button
-        onClick={handleOrder}
-        disabled={!canOrder}
-        className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
-          ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-      >
-        {orderLoading ? (
-          <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
-        ) : ordered ? (
-          <><CheckCircle2 className="w-4 h-4" />Yuborildi!</>
-        ) : (
-          <><Send className="w-4 h-4" />Gift yuborish</>
-        )}
-      </button>
+      {!ordered && (
+        <button
+          onClick={handleOrder}
+          disabled={!canOrder}
+          className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
+            ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+        >
+          {orderLoading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+          ) : (
+            <><Send className="w-4 h-4" />Gift yuborish</>
+          )}
+        </button>
+      )}
     </ModalShell>
   );
 };
 
 // ── BUY MODAL for NFT Gifts ──
 const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
+  const navigate = useNavigate();
   const userSearch = useUserSearch();
   const aiComment = useAIComment();
   const [orderLoading, setOrderLoad] = useState(false);
@@ -465,23 +491,42 @@ const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
   const { cleanUsername, anonim, userInfo } = userSearch;
   const { commentOn, comment } = aiComment;
 
+  const getSenderId = () => (
+    apiUser?.id || apiUser?.user_id || apiUser?.tg_id || apiUser?.telegram_id || ""
+  );
+
   const handleOrder = async () => {
+    if (!cleanUsername) return;
     if (!userInfo && !anonim) return;
+
+    const senderId = getSenderId();
+    if (!senderId) {
+      setOrderError("Foydalanuvchi ID topilmadi. Iltimos qayta kiring.");
+      return;
+    }
+
     setOrderLoad(true);
     setOrderError(null);
     try {
       const params = new URLSearchParams({
-        user_id: apiUser?.id || "",
-        gift_id: gift.id,
+        user_id: String(senderId),
+        gift_id: String(gift.id),
         sent: `@${cleanUsername}`,
         anonim: anonim ? "true" : "false",
       });
       if (commentOn && comment.trim()) params.append("comment", comment.trim());
+
       const res = await fetch(`${NFT_ORDER_API_BASE}?${params.toString()}`);
       const data = await res.json();
-      if (data.ok) {
+
+      // ── data.ok yoki data.order_id bo'lsa muvaffaqiyatli ──
+      if (data.ok || data.order_id) {
         setOrdered(true);
-        setTimeout(() => { onSuccess && onSuccess(); onClose(); }, 2000);
+        onSuccess && onSuccess();
+        setTimeout(() => {
+          onClose();
+          navigate("/gifts");
+        }, 1800);
       } else {
         setOrderError(data.message || "Xatolik yuz berdi");
       }
@@ -503,9 +548,7 @@ const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
           src={gift.photo}
           alt={formatName(gift.nft_id)}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
         />
       }
       onClose={onClose}
@@ -522,26 +565,31 @@ const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
       )}
 
       {ordered && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 mb-3">
-          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-          <p className="text-xs text-green-600 font-medium">NFT Gift muvaffaqiyatli yuborildi! 🎉</p>
+        <div className="flex flex-col items-center justify-center py-6 gap-3 animate-in fade-in zoom-in">
+          <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-green-500" />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-green-600">Yuborildi! 🎉</p>
+            <p className="text-xs text-muted-foreground mt-1">NFT Gift muvaffaqiyatli jo'natildi</p>
+          </div>
         </div>
       )}
 
-      <button
-        onClick={handleOrder}
-        disabled={!canOrder}
-        className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
-          ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-      >
-        {orderLoading ? (
-          <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
-        ) : ordered ? (
-          <><CheckCircle2 className="w-4 h-4" />Yuborildi!</>
-        ) : (
-          <><Send className="w-4 h-4" />NFT Gift yuborish</>
-        )}
-      </button>
+      {!ordered && (
+        <button
+          onClick={handleOrder}
+          disabled={!canOrder}
+          className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
+            ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+        >
+          {orderLoading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+          ) : (
+            <><Send className="w-4 h-4" />NFT Gift yuborish</>
+          )}
+        </button>
+      )}
     </ModalShell>
   );
 };
@@ -560,8 +608,8 @@ export default function GiftsPage() {
   const [oddiyGifts, setOddiyGifts]     = useState([]);
   const [oddiyLoading, setOddiyLoading] = useState(false);
   const [oddiyError, setOddiyError]     = useState(null);
-  const [buyGift, setBuyGift]           = useState(null);   // selected oddiy gift for modal
-  const [buyNftGift, setBuyNftGift]     = useState(null);   // selected nft gift for modal
+  const [buyGift, setBuyGift]           = useState(null);
+  const [buyNftGift, setBuyNftGift]     = useState(null);
 
   const userBalance = Number(apiUser?.balance || 0);
 
@@ -821,7 +869,6 @@ export default function GiftsPage() {
                                 <Eye className="w-3 h-3 shrink-0" /><span>View</span>
                               </button>
                             </div>
-                            {/* ── UPDATED: open NFT modal instead of navigate ── */}
                             <button
                               onClick={() => affordable && setBuyNftGift(gift)}
                               disabled={!affordable}
