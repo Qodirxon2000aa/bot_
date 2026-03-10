@@ -41,38 +41,33 @@ const GIFT_EMOJIS = {
 };
 
 const OPENROUTER_API_KEY = "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";
-const NFT_API_BASE = "https://tezpremium.uz/uzbstar/giftlar.php";
-const ODDIY_API_BASE = "https://tezpremium.uz/MilliyDokon/gifts/info.php";
-const ORDER_API_BASE = "https://tezpremium.uz/MilliyDokon/gifts/order.php";
+const NFT_API_BASE       = "https://tezpremium.uz/uzbstar/giftlar.php";
+const ODDIY_API_BASE     = "https://tezpremium.uz/MilliyDokon/gifts/info.php";
+const ORDER_API_BASE     = "https://tezpremium.uz/MilliyDokon/gifts/order.php";
 const NFT_ORDER_API_BASE = "https://tezpremium.uz/MilliyDokon/gifts/nft.php";
-const USER_CHECK_API = "https://tezpremium.uz/starsapi/user.php";
+const USER_CHECK_API     = "https://tezpremium.uz/starsapi/user.php";
 
 const NFT_FILTERS = [
-  { key: "all", label: "Barcha" },
-  { key: "cheap", label: "Arzon ↑" },
+  { key: "all",       label: "Barcha"   },
+  { key: "cheap",     label: "Arzon ↑"  },
   { key: "expensive", label: "Qimmat ↓" },
-  { key: "new", label: "Yangi" },
-  { key: "old", label: "Eski" },
+  { key: "new",       label: "Yangi"    },
+  { key: "old",       label: "Eski"     },
 ];
 
-// ── Ekranga kiranda bir marta ishlovchi animatsiya ──
+// ── Lottie animatsiya (bir marta) ──
 const GiftAnimation = ({ name }) => {
-  const animData = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
-  const wrapRef = useRef(null);
+  const animData  = useMemo(() => GIFT_ANIMATIONS[name] ?? null, [name]);
+  const wrapRef   = useRef(null);
   const lottieRef = useRef(null);
   const [visible, setVisible] = useState(false);
-  const [played, setPlayed] = useState(false);
+  const [played,  setPlayed]  = useState(false);
 
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
       { threshold: 0.3 }
     );
     observer.observe(el);
@@ -105,13 +100,13 @@ const GiftAnimation = ({ name }) => {
   );
 };
 
-// ── Shared User Search Hook ──
+// ── User Search Hook ──
 const useUserSearch = () => {
-  const [username, setUsername] = useState("");
-  const [anonim, setAnonim] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [checkLoading, setCheckLoad] = useState(false);
-  const [checkError, setCheckError] = useState(null);
+  const [username,     setUsername]   = useState("");
+  const [anonim,       setAnonim]     = useState(false);
+  const [userInfo,     setUserInfo]   = useState(null);
+  const [checkLoading, setCheckLoad]  = useState(false);
+  const [checkError,   setCheckError] = useState(null);
   const debounceRef = useRef(null);
 
   const cleanUsername = username.replace(/^@/, "").trim();
@@ -124,7 +119,7 @@ const useUserSearch = () => {
       setCheckError(null);
       setUserInfo(null);
       try {
-        const res = await fetch(`${USER_CHECK_API}?username=${encodeURIComponent(cleanUsername)}`);
+        const res  = await fetch(`${USER_CHECK_API}?username=${encodeURIComponent(cleanUsername)}`);
         const data = await res.json();
         if (data.username) setUserInfo(data);
         else setCheckError(data.message || data.error || "Foydalanuvchi topilmadi");
@@ -140,12 +135,12 @@ const useUserSearch = () => {
   return { username, setUsername, cleanUsername, anonim, setAnonim, userInfo, checkLoading, checkError };
 };
 
-// ── Shared AI Comment Hook ──
+// ── AI Comment Hook ──
 const useAIComment = () => {
-  const [commentOn, setCommentOn] = useState(false);
-  const [comment, setComment] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [commentOn,   setCommentOn]   = useState(false);
+  const [comment,     setComment]     = useState("");
+  const [aiLoading,   setAiLoading]   = useState(false);
+  const [aiPrompt,    setAiPrompt]    = useState("");
   const [showAiInput, setShowAiInput] = useState(false);
 
   const generateAIGreeting = async () => {
@@ -158,8 +153,6 @@ const useAIComment = () => {
       "openchat/openchat-7b:free",
       "gryphe/mythomist-7b:free",
     ];
-
-    let lastError = null;
 
     for (const model of FREE_MODELS) {
       try {
@@ -174,32 +167,17 @@ const useAIComment = () => {
           body: JSON.stringify({
             model,
             max_tokens: 150,
-            messages: [
-              {
-                role: "user",
-                content: `Write a short sincere greeting in Uzbek language for: "${aiPrompt}". Only return the greeting text, nothing else.`,
-              },
-            ],
+            messages: [{
+              role: "user",
+              content: `Write a short sincere greeting in Uzbek language for: "${aiPrompt}". Only return the greeting text, nothing else.`,
+            }],
           }),
         });
-
         const data = await response.json();
-
-        if (data.error) {
-          lastError = data.error?.message;
-          continue;
-        }
-
+        if (data.error) continue;
         const text = data?.choices?.[0]?.message?.content?.trim() || "";
-        if (text) {
-          setComment(text);
-          setShowAiInput(false);
-          setAiLoading(false);
-          return;
-        }
-      } catch (err) {
-        lastError = err.message;
-      }
+        if (text) { setComment(text); setShowAiInput(false); setAiLoading(false); return; }
+      } catch { /* next model */ }
     }
 
     const fallbacks = [
@@ -215,13 +193,12 @@ const useAIComment = () => {
   return { commentOn, setCommentOn, comment, setComment, aiLoading, aiPrompt, setAiPrompt, showAiInput, setShowAiInput, generateAIGreeting };
 };
 
-// ── Shared Modal Shell ──
+// ── Modal Shell ──
 const ModalShell = ({ title, subtitle, thumbContent, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-end justify-center">
     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
     <div className="relative w-full max-w-md bg-background rounded-t-3xl shadow-2xl z-10 overflow-y-auto pb-[50px]" style={{ maxHeight: "92vh" }}>
       <div className="p-5 pb-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-bold text-lg">{title}</h2>
@@ -231,19 +208,16 @@ const ModalShell = ({ title, subtitle, thumbContent, onClose, children }) => (
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Thumb */}
         <div className="w-20 h-20 mx-auto rounded-2xl bg-accent/30 overflow-hidden mb-5">
           {thumbContent}
         </div>
-
         {children}
       </div>
     </div>
   </div>
 );
 
-// ── Shared User Input Section ──
+// ── User Input Section ──
 const UserInputSection = ({ username, setUsername, cleanUsername, userInfo, checkLoading, checkError }) => (
   <div className="space-y-2 mb-3">
     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kimga yuborish?</label>
@@ -257,9 +231,9 @@ const UserInputSection = ({ username, setUsername, cleanUsername, userInfo, chec
         className="w-full pl-7 pr-10 py-3 rounded-xl bg-accent/40 border border-border text-sm font-medium focus:outline-none focus:border-primary focus:bg-accent/20 transition-all"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2">
-        {checkLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-        {!checkLoading && userInfo && <CheckCheck className="w-4 h-4 text-green-500" />}
-        {!checkLoading && checkError && cleanUsername && <AlertCircle className="w-4 h-4 text-red-500" />}
+        {checkLoading  && <Loader2    className="w-4 h-4 animate-spin text-muted-foreground" />}
+        {!checkLoading && userInfo    && <CheckCheck  className="w-4 h-4 text-green-500" />}
+        {!checkLoading && checkError  && cleanUsername && <AlertCircle className="w-4 h-4 text-red-500" />}
       </div>
     </div>
 
@@ -282,7 +256,7 @@ const UserInputSection = ({ username, setUsername, cleanUsername, userInfo, chec
   </div>
 );
 
-// ── Shared Comment Section ──
+// ── Comment Section ──
 const CommentSection = ({ commentOn, setCommentOn, comment, setComment, aiLoading, aiPrompt, setAiPrompt, showAiInput, setShowAiInput, generateAIGreeting }) => (
   <>
     <button
@@ -348,7 +322,7 @@ const CommentSection = ({ commentOn, setCommentOn, comment, setComment, aiLoadin
   </>
 );
 
-// ── Shared Anonim Toggle ──
+// ── Anonim Toggle ──
 const AnonimToggle = ({ anonim, setAnonim }) => (
   <button
     onClick={() => setAnonim((v) => !v)}
@@ -366,25 +340,44 @@ const AnonimToggle = ({ anonim, setAnonim }) => (
   </button>
 );
 
-// ── BUY MODAL for Oddiy Gifts ──
-const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
-  const navigate = useNavigate();
-  const userSearch = useUserSearch();
-  const aiComment = useAIComment();
-  const [orderLoading, setOrderLoad] = useState(false);
-  const [orderError, setOrderError] = useState(null);
-  const [ordered, setOrdered] = useState(false);
+// ── Success Overlay ──
+const SuccessOverlay = ({ text = "Gift muvaffaqiyatli jo'natildi" }) => (
+  <div
+    className="fixed inset-0 z-[60] flex items-center justify-center animate-in fade-in duration-300"
+    style={{ backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", backgroundColor: "rgba(0,0,0,0.55)" }}
+  >
+    <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
+      <div className="w-28 h-28 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center shadow-2xl shadow-green-500/20">
+        <CheckCircle2 className="w-14 h-14 text-green-400" />
+      </div>
+      <div className="text-center">
+        <p className="text-2xl font-bold text-white">🎉 Yuborildi!</p>
+        <p className="text-sm text-white/60 mt-1">{text}</p>
+      </div>
+    </div>
+  </div>
+);
+
+// ════════════════════════════════════════════════
+// ── BUY MODAL — Oddiy Gifts ──
+// ════════════════════════════════════════════════
+const BuyOddiyModal = ({ gift, onClose, onSuccess }) => {
+  const navigate        = useNavigate();
+  const { user }        = useTelegram();           // ← Telegram context
+  const userSearch      = useUserSearch();
+  const aiComment       = useAIComment();
+  const [orderLoading, setOrderLoad]  = useState(false);
+  const [orderError,   setOrderError] = useState(null);
+  const [ordered,      setOrdered]    = useState(false);
 
   const { cleanUsername, anonim, userInfo } = userSearch;
-  const { commentOn, comment } = aiComment;
+  const { commentOn, comment }              = aiComment;
 
-  const getSenderId = () => (
-    apiUser?.id || apiUser?.user_id || apiUser?.tg_id || apiUser?.telegram_id || ""
-  );
+  // Real Telegram ID → DEV MODE da fakeId ishlatiladi
+  const getSenderId = () => user?.id || "";
 
   const handleOrder = async () => {
     if (!cleanUsername) return;
-    if (!userInfo && !anonim) return;
 
     const senderId = getSenderId();
     if (!senderId) {
@@ -397,36 +390,30 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
     try {
       const params = new URLSearchParams({
         user_id: String(senderId),
-        gift_id: String(gift.id),
+        gift_id:  String(gift.id),
         username: `@${cleanUsername}`,
-        anonim: anonim ? "true" : "false",
+        anonim:   anonim ? "true" : "false",
       });
       if (commentOn && comment.trim()) params.append("comment", comment.trim());
 
-      const res = await fetch(`${ORDER_API_BASE}?${params.toString()}`);
-      const rawText = await res.text();
+      console.log("🎁 ODDIY URL:", `${ORDER_API_BASE}?${params.toString()}`);
 
-      // ── Boshidagi "03.03.2026" kabi keraksiz matnni olib tashlash ──
+      const res      = await fetch(`${ORDER_API_BASE}?${params.toString()}`);
+      const rawText  = await res.text();
       const jsonStart = rawText.indexOf("{");
-      const cleanText = jsonStart >= 0 ? rawText.slice(jsonStart) : rawText;
-      const data = JSON.parse(cleanText);
+      const data     = JSON.parse(jsonStart >= 0 ? rawText.slice(jsonStart) : rawText);
 
-      console.log("🎁 ODDIY ORDER API javobi:", data);
-      console.log("📦 Yuborilgan params:", params.toString());
+      console.log("🎁 ODDIY ORDER javobi:", data);
 
-      // ── data.ok === true bo'lsa muvaffaqiyatli ──
       if (data.ok === true) {
         setOrdered(true);
         onSuccess && onSuccess();
-        setTimeout(() => {
-          onClose();
-          navigate("/gifts");
-        }, 3000);
+        setTimeout(() => { onClose(); navigate("/gifts"); }, 3000);
       } else {
         setOrderError(data.message || data.error || "Xatolik yuz berdi");
       }
-    } catch {
-      setOrderError("Serverga ulanib bo'lmadi");
+    } catch (err) {
+      setOrderError("Serverga ulanib bo'lmadi: " + err.message);
     } finally {
       setOrderLoad(false);
     }
@@ -443,7 +430,7 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
         onClose={onClose}
       >
         <UserInputSection {...userSearch} />
-        <CommentSection {...aiComment} />
+        <CommentSection   {...aiComment} />
         <AnonimToggle anonim={anonim} setAnonim={userSearch.setAnonim} />
 
         {orderError && (
@@ -458,61 +445,45 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
             onClick={handleOrder}
             disabled={!canOrder}
             className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
-              ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+              ${canOrder
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20"
+                : "bg-muted text-muted-foreground cursor-not-allowed"}`}
           >
-            {orderLoading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
-            ) : (
-              <><Send className="w-4 h-4" />Gift yuborish</>
-            )}
+            {orderLoading
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+              : <><Send    className="w-4 h-4" />Gift yuborish</>}
           </button>
         )}
       </ModalShell>
 
-      {ordered && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center animate-in fade-in duration-300"
-          style={{ backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", backgroundColor: "rgba(0,0,0,0.55)" }}
-        >
-          <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
-            <div className="w-28 h-28 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center shadow-2xl shadow-green-500/20">
-              <CheckCircle2 className="w-14 h-14 text-green-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">🎉 Yuborildi!</p>
-              <p className="text-sm text-white/60 mt-1">Gift muvaffaqiyatli jo'natildi</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {ordered && <SuccessOverlay text="Gift muvaffaqiyatli jo'natildi" />}
     </>
   );
 };
 
-// ── BUY MODAL for NFT Gifts ──
-const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
-  const navigate = useNavigate();
+// ════════════════════════════════════════════════
+// ── BUY MODAL — NFT Gifts ──
+// ════════════════════════════════════════════════
+const BuyNftModal = ({ gift, onClose, onSuccess }) => {
+  const navigate   = useNavigate();
+  const { user }   = useTelegram();                // ← Telegram context
   const userSearch = useUserSearch();
-  const aiComment = useAIComment();
-  const [orderLoading, setOrderLoad] = useState(false);
-  const [orderError, setOrderError] = useState(null);
-  const [ordered, setOrdered] = useState(false);
+  const [orderLoading, setOrderLoad]  = useState(false);
+  const [orderError,   setOrderError] = useState(null);
+  const [ordered,      setOrdered]    = useState(false);
+
+  const { cleanUsername } = userSearch;
 
   const formatName = (nftId) => {
     if (!nftId) return "Gift";
     return nftId.split("-")[0].replace(/([A-Z])/g, " $1").trim();
   };
 
-  const { cleanUsername, anonim, userInfo } = userSearch;
-  const { commentOn, comment } = aiComment;
-
-  const getSenderId = () => (
-    apiUser?.id || apiUser?.user_id || apiUser?.tg_id || apiUser?.telegram_id || ""
-  );
+  // Real Telegram ID → DEV MODE da fakeId ishlatiladi
+  const getSenderId = () => user?.id || "";
 
   const handleOrder = async () => {
     if (!cleanUsername) return;
-    if (!userInfo && !anonim) return;
 
     const senderId = getSenderId();
     if (!senderId) {
@@ -524,110 +495,100 @@ const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
     setOrderError(null);
     try {
       const params = new URLSearchParams({
-        user_id: String(senderId),
-        gift_id: String(gift.id),
-        sent: `@${cleanUsername}`,
-        anonim: anonim ? "true" : "false",
+        user_id:  String(senderId),
+        gift_id:  String(gift.id),
+        sent:     `@${cleanUsername}`,
       });
-      if (commentOn && comment.trim()) params.append("comment", comment.trim());
 
-      const res = await fetch(`${NFT_ORDER_API_BASE}?${params.toString()}`);
-      const data = await res.json();
+      console.log("✨ NFT URL:", `${NFT_ORDER_API_BASE}?${params.toString()}`);
 
-      console.log("✨ NFT ORDER API javobi:", data);
-      console.log("📦 Yuborilgan params:", params.toString());
+      const res      = await fetch(`${NFT_ORDER_API_BASE}?${params.toString()}`);
+      const rawText  = await res.text();
+      const jsonStart = rawText.indexOf("{");
+      const data     = JSON.parse(jsonStart >= 0 ? rawText.slice(jsonStart) : rawText);
 
-      // ── data.ok yoki data.order_id bo'lsa muvaffaqiyatli ──
-      if (data.ok || data.order_id) {
+      console.log("✨ NFT ORDER javobi:", data);
+
+      if (data.ok === true) {
         setOrdered(true);
         onSuccess && onSuccess();
-        setTimeout(() => {
-          onClose();
-          navigate("/gifts");
-        }, 1800);
+        setTimeout(() => { onClose(); navigate("/gifts"); }, 3000);
       } else {
-        setOrderError(data.message || "Xatolik yuz berdi");
+        setOrderError(data.message || data.error || "Xatolik yuz berdi");
       }
-    } catch {
-      setOrderError("Serverga ulanib bo'lmadi");
+    } catch (err) {
+      setOrderError("Serverga ulanib bo'lmadi: " + err.message);
     } finally {
       setOrderLoad(false);
     }
   };
 
-  const canOrder = !orderLoading && cleanUsername && (userInfo || anonim) && !ordered;
+  const canOrder = !orderLoading && cleanUsername.length > 2 && !ordered;
 
   return (
-    <ModalShell
-      title="NFT Gift yuborish"
-      subtitle={`${formatName(gift.nft_id)} · ${gift.price.toLocaleString("uz-UZ")} UZS`}
-      thumbContent={
-        <img
-          src={gift.photo}
-          alt={formatName(gift.nft_id)}
-          className="w-full h-full object-cover"
-          onError={(e) => { e.currentTarget.style.display = "none"; }}
-        />
-      }
-      onClose={onClose}
-    >
-      <UserInputSection {...userSearch} />
-      <CommentSection {...aiComment} />
-      <AnonimToggle anonim={anonim} setAnonim={userSearch.setAnonim} />
+    <>
+      <ModalShell
+        title="NFT Gift yuborish"
+        subtitle={`${formatName(gift.nft_id)} · ${gift.price.toLocaleString("uz-UZ")} UZS`}
+        thumbContent={
+          <img
+            src={gift.photo}
+            alt={formatName(gift.nft_id)}
+            className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+        }
+        onClose={onClose}
+      >
+        <UserInputSection {...userSearch} />
 
-      {orderError && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 mb-3">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-          <p className="text-xs text-red-500">{orderError}</p>
-        </div>
-      )}
-
-      {ordered && (
-        <div className="flex flex-col items-center justify-center py-6 gap-3 animate-in fade-in zoom-in">
-          <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
+        {orderError && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 mb-3">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+            <p className="text-xs text-red-500">{orderError}</p>
           </div>
-          <div className="text-center">
-            <p className="text-base font-bold text-green-600">Yuborildi! 🎉</p>
-            <p className="text-xs text-muted-foreground mt-1">NFT Gift muvaffaqiyatli jo'natildi</p>
-          </div>
-        </div>
-      )}
+        )}
 
-      {!ordered && (
-        <button
-          onClick={handleOrder}
-          disabled={!canOrder}
-          className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
-            ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-        >
-          {orderLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
-          ) : (
-            <><Send className="w-4 h-4" />NFT Gift yuborish</>
-          )}
-        </button>
-      )}
-    </ModalShell>
+        {!ordered && (
+          <button
+            onClick={handleOrder}
+            disabled={!canOrder}
+            className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
+              ${canOrder
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20"
+                : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+          >
+            {orderLoading
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+              : <><Send    className="w-4 h-4" />NFT Gift yuborish</>}
+          </button>
+        )}
+      </ModalShell>
+
+      {ordered && <SuccessOverlay text="NFT Gift muvaffaqiyatli jo'natildi" />}
+    </>
   );
 };
 
+// ════════════════════════════════════════════════
+// ── MAIN PAGE ──
+// ════════════════════════════════════════════════
 export default function GiftsPage() {
   const navigate    = useNavigate();
   const { apiUser } = useTelegram();
 
-  const [mainTab, setMainTab]           = useState("nft");
-  const [oddiyFilter, setOddiyFilter]   = useState("cheap");
+  const [mainTab,      setMainTab]      = useState("nft");
+  const [oddiyFilter,  setOddiyFilter]  = useState("cheap");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [copiedId, setCopiedId]         = useState(null);
-  const [gifts, setGifts]               = useState([]);
-  const [nftLoading, setNftLoading]     = useState(true);
-  const [nftError, setNftError]         = useState(null);
-  const [oddiyGifts, setOddiyGifts]     = useState([]);
+  const [copiedId,     setCopiedId]     = useState(null);
+  const [gifts,        setGifts]        = useState([]);
+  const [nftLoading,   setNftLoading]   = useState(true);
+  const [nftError,     setNftError]     = useState(null);
+  const [oddiyGifts,   setOddiyGifts]   = useState([]);
   const [oddiyLoading, setOddiyLoading] = useState(false);
-  const [oddiyError, setOddiyError]     = useState(null);
-  const [buyGift, setBuyGift]           = useState(null);
-  const [buyNftGift, setBuyNftGift]     = useState(null);
+  const [oddiyError,   setOddiyError]   = useState(null);
+  const [buyGift,      setBuyGift]      = useState(null);
+  const [buyNftGift,   setBuyNftGift]   = useState(null);
 
   const userBalance = Number(apiUser?.balance || 0);
 
@@ -737,8 +698,10 @@ export default function GiftsPage() {
               <div className="mt-3 flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-white/80" />
                 <p className="text-xs text-white/80">Giftlar sotib olish uchun balansingizni to'ldiring</p>
-                <button onClick={() => navigate("/payment")}
-                  className="ml-auto shrink-0 text-xs font-semibold bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-all">
+                <button
+                  onClick={() => navigate("/payment")}
+                  className="ml-auto shrink-0 text-xs font-semibold bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-all"
+                >
                   To'ldirish
                 </button>
               </div>
@@ -1036,14 +999,12 @@ export default function GiftsPage() {
             </Card>
           </>
         )}
-
       </div>
 
       {/* ── ODDIY BUY MODAL ── */}
       {buyGift && (
         <BuyOddiyModal
           gift={buyGift}
-          apiUser={apiUser}
           onClose={() => setBuyGift(null)}
           onSuccess={() => {}}
         />
@@ -1053,7 +1014,6 @@ export default function GiftsPage() {
       {buyNftGift && (
         <BuyNftModal
           gift={buyNftGift}
-          apiUser={apiUser}
           onClose={() => setBuyNftGift(null)}
           onSuccess={() => {}}
         />
