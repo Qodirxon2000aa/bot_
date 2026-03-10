@@ -404,18 +404,26 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
       if (commentOn && comment.trim()) params.append("comment", comment.trim());
 
       const res = await fetch(`${ORDER_API_BASE}?${params.toString()}`);
-      const data = await res.json();
+      const rawText = await res.text();
 
-      // ── data.ok yoki data.order_id bo'lsa muvaffaqiyatli ──
-      if (data.ok || data.order_id) {
+      // ── Boshidagi "03.03.2026" kabi keraksiz matnni olib tashlash ──
+      const jsonStart = rawText.indexOf("{");
+      const cleanText = jsonStart >= 0 ? rawText.slice(jsonStart) : rawText;
+      const data = JSON.parse(cleanText);
+
+      console.log("🎁 ODDIY ORDER API javobi:", data);
+      console.log("📦 Yuborilgan params:", params.toString());
+
+      // ── data.ok === true bo'lsa muvaffaqiyatli ──
+      if (data.ok === true) {
         setOrdered(true);
         onSuccess && onSuccess();
         setTimeout(() => {
           onClose();
           navigate("/gifts");
-        }, 1800);
+        }, 3000);
       } else {
-        setOrderError(data.message || "Xatolik yuz berdi");
+        setOrderError(data.message || data.error || "Xatolik yuz berdi");
       }
     } catch {
       setOrderError("Serverga ulanib bo'lmadi");
@@ -427,50 +435,57 @@ const BuyOddiyModal = ({ gift, apiUser, onClose, onSuccess }) => {
   const canOrder = !orderLoading && cleanUsername && (userInfo || anonim) && !ordered;
 
   return (
-    <ModalShell
-      title="Gift yuborish"
-      subtitle={`${gift.name.replace(/_/g, " ")} · ${gift.price.toLocaleString("uz-UZ")} UZS`}
-      thumbContent={<GiftAnimation name={gift.name} />}
-      onClose={onClose}
-    >
-      <UserInputSection {...userSearch} />
-      <CommentSection {...aiComment} />
-      <AnonimToggle anonim={anonim} setAnonim={userSearch.setAnonim} />
+    <>
+      <ModalShell
+        title="Gift yuborish"
+        subtitle={`${gift.name.replace(/_/g, " ")} · ${gift.price.toLocaleString("uz-UZ")} UZS`}
+        thumbContent={<GiftAnimation name={gift.name} />}
+        onClose={onClose}
+      >
+        <UserInputSection {...userSearch} />
+        <CommentSection {...aiComment} />
+        <AnonimToggle anonim={anonim} setAnonim={userSearch.setAnonim} />
 
-      {orderError && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 mb-3">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-          <p className="text-xs text-red-500">{orderError}</p>
-        </div>
-      )}
+        {orderError && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 mb-3">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+            <p className="text-xs text-red-500">{orderError}</p>
+          </div>
+        )}
+
+        {!ordered && (
+          <button
+            onClick={handleOrder}
+            disabled={!canOrder}
+            className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
+              ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+          >
+            {orderLoading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
+            ) : (
+              <><Send className="w-4 h-4" />Gift yuborish</>
+            )}
+          </button>
+        )}
+      </ModalShell>
 
       {ordered && (
-        <div className="flex flex-col items-center justify-center py-6 gap-3 animate-in fade-in zoom-in">
-          <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-          </div>
-          <div className="text-center">
-            <p className="text-base font-bold text-green-600">Yuborildi! 🎉</p>
-            <p className="text-xs text-muted-foreground mt-1">Gift muvaffaqiyatli jo'natildi</p>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center animate-in fade-in duration-300"
+          style={{ backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", backgroundColor: "rgba(0,0,0,0.55)" }}
+        >
+          <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
+            <div className="w-28 h-28 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center shadow-2xl shadow-green-500/20">
+              <CheckCircle2 className="w-14 h-14 text-green-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">🎉 Yuborildi!</p>
+              <p className="text-sm text-white/60 mt-1">Gift muvaffaqiyatli jo'natildi</p>
+            </div>
           </div>
         </div>
       )}
-
-      {!ordered && (
-        <button
-          onClick={handleOrder}
-          disabled={!canOrder}
-          className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-bold transition-all
-            ${canOrder ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-        >
-          {orderLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" />Yuborilmoqda...</>
-          ) : (
-            <><Send className="w-4 h-4" />Gift yuborish</>
-          )}
-        </button>
-      )}
-    </ModalShell>
+    </>
   );
 };
 
@@ -518,6 +533,9 @@ const BuyNftModal = ({ gift, apiUser, onClose, onSuccess }) => {
 
       const res = await fetch(`${NFT_ORDER_API_BASE}?${params.toString()}`);
       const data = await res.json();
+
+      console.log("✨ NFT ORDER API javobi:", data);
+      console.log("📦 Yuborilgan params:", params.toString());
 
       // ── data.ok yoki data.order_id bo'lsa muvaffaqiyatli ──
       if (data.ok || data.order_id) {
